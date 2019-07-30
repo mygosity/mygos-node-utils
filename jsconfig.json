@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "moduleResolution": "node", //enables checking of import logic (goto definition)
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "/*": ["*"]
+    }
+  },
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "mygos-node-utils",
+  "version": "1.0.0",
+  "description": "Mygos personal utilities",
+  "main": "index.js",
+  "scripts": {
+    "start": "babel-node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mygosity/mygos-node-utils.git"
+  },
+  "author": "mygosity",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mygosity/mygos-node-utils/issues"
+  },
+  "homepage": "https://github.com/mygosity/mygos-node-utils#readme",
+  "dependencies": {
+    "moment-timezone": "^0.5.26"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/node": "^7.5.5",
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^10.0.2",
+    "babel-plugin-module-resolver": "^3.2.0",
+    "babel-root-slash-import": "^1.1.0",
+    "eslint": "^6.1.0",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "prettier": "^1.18.2"
+  }
+}

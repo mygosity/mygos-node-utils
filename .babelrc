@@ -1,0 +1,18 @@
+{
+  "presets": ["@babel/preset-env"],
+  "plugins": [
+    "@babel/plugin-proposal-class-properties",
+    [
+      "module-resolver",
+      {
+        "root": ["./"]
+      }
+    ],
+    [
+      "module:babel-root-slash-import",
+      {
+        "rootPathSuffix": "/"
+      }
+    ]
+  ]
+}
