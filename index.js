@@ -31,6 +31,14 @@ const commandLine = new CommandLine({
   fileManager,
   logger
 });
+const interceptor = input => {
+  if (input === "something") {
+    //do something
+    console.log("interceptor::", input);
+    //return something other than null / undefined to prevent further execution
+    return 1;
+  }
+};
 
 function Main() {
   logger.log("Main:: starting application");
