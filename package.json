@@ -18,7 +18,9 @@
   },
   "homepage": "https://github.com/mygosity/mygos-node-utils#readme",
   "dependencies": {
-    "moment-timezone": "^0.5.26"
+    "moment-timezone": "^0.5.26",
+    "websocket": "^1.0.29",
+    "ws": "^7.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
