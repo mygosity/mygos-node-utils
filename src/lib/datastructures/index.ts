@@ -1,14 +1,14 @@
 /**********************************************************************************
 Jewan's queue data structure
 **********************************************************************************/
-function NDeque(cap) {
-  let capacity = cap;
-  let size = 0;
+function NDeque(cap: number) {
+  let capacity: number = cap;
+  let size: number = 0;
 
-  let front = 0;
-  let back = 0;
+  let front: number = 0;
+  let back: number = 0;
 
-  let array = new Array(cap);
+  let array: any[] = new Array(cap);
   this.list = array;
 
   this.Capacity = function() {

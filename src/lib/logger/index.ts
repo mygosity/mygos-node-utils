@@ -1,9 +1,21 @@
 const util = require('util');
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.depth = null;
-import fileHelper from '../file';
+import fileHelper, { WriteFileOptionsType } from '../file';
 import * as dateUtils from '../date';
 import * as utils from '../common';
+import { KeyValuePair } from '../typedefinitions';
+
+interface LoggableType {
+  logSignature?: string;
+  srcSignature?: string;
+  [key: string]: any;
+}
+
+interface WriteCustomJsonOptionsType {
+  path?: string;
+  addFolder?: string;
+}
 
 function LogService() {
   this.errorPath = 'logging/';
@@ -32,21 +44,21 @@ function LogService() {
     }
   };
 
-  this.setReportingVoice = (key, value) => {
+  this.setReportingVoice = (key: string, value: any) => {
     this.reportVoice[key] = value;
   };
 
-  this.outputMethod = (...args) => {
+  this.outputMethod = (...args: any[]) => {
     console.log(...args);
   };
 
-  this.report = (target, ...args) => {
+  this.report = (target: LoggableType, ...args: any[]) => {
     if (this.allowedToLog(target)) {
       this.outputMethod(target.logSignature, ...args);
     }
   };
 
-  this.allowedToLog = (target) => {
+  this.allowedToLog = (target: LoggableType) => {
     if (target.logSignature == null) {
       console.log('allowedToLog:: check -> target.logSignature: ' + target.logSignature);
       console.trace('check here');
@@ -73,17 +85,22 @@ function LogService() {
     return false;
   };
 
-  this.log = (...args) => {
+  this.log = (...args: any[]) => {
     this.outputMethod(...args);
   };
 
-  this.writeCustomJson = (filename, data, options = {}, writeOptions = {}) => {
+  this.writeCustomJson = (
+    filename: string,
+    data: any,
+    options: WriteCustomJsonOptionsType = {},
+    writeOptions: WriteFileOptionsType = {},
+  ) => {
     try {
       let folderPath;
       if (options.path === undefined) {
         const folder = dateUtils.getAusTimestamp(Date.now(), 'YYYY-MM-DD');
         folderPath = `${this.loggingPath}${folder}`;
-        if (options.addfolder !== undefined) {
+        if (options.addFolder != null) {
           folderPath += '/' + options.addFolder;
         }
       } else {
@@ -97,7 +114,7 @@ function LogService() {
     }
   };
 
-  this.logban = (src, ...args) => {
+  this.logban = (src: LoggableType, ...args: any[]) => {
     try {
       this.report({ srcSignature: 'logban', ...src }, { func: `LogService=>logban::` });
       this.writeCustomJson(`logban`, { data: args });
@@ -106,7 +123,7 @@ function LogService() {
     }
   };
 
-  this.writelog = (src, ...args) => {
+  this.writelog = (src: LoggableType, ...args: any[]) => {
     try {
       this.report({ srcSignature: 'writelog', ...src }, { func: `LogService=>writelog::` });
       this.writeCustomJson(`logservice`, { src, data: args });
@@ -115,13 +132,15 @@ function LogService() {
     }
   };
 
-  this.error = (src, error, ...args) => {
+  this.error = (src: LoggableType, error: any, ...args: any[]) => {
     try {
       this.report(src, { srcSignature: 'error' }, { func: `LogService=>error::` });
       this.writeCustomJson(
         `errors`,
         { src, errorMsg: error.toString(), data: args, error },
-        { path: `${this.errorPath}logger/${dateUtils.getAusTimestamp(Date.now(), 'YYYY-MM-DD')}` },
+        {
+          path: `${this.errorPath}logger/${dateUtils.getAusTimestamp(Date.now(), 'YYYY-MM-DD')}`,
+        },
       );
     } catch (error) {
       // this.outputMethod(error);

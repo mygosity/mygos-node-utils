@@ -2,6 +2,26 @@ import logger from '../../logger';
 import fileHelper from '../../file';
 import * as dateUtils from '../../date';
 import * as utils from '../../common';
+import { KeyValuePair } from '../../typedefinitions';
+
+export interface WebsocketServerOptionsType {
+  originPredicate?: Function;
+  onAuthRejectHandler?: Function;
+  onconnectAccepted?: Function;
+  acceptProtocol?: string;
+  onclose?: Function;
+  onerror?: Function;
+  onpong?: Function;
+  onutfmessage?: Function;
+  onbinarymessage?: Function;
+  msgHandlers?: {
+    onutfmessage?: Function;
+    onbinarymessage?: Function;
+  };
+  //node only
+  sinbinFilepath?: string;
+  autoSinBin?: boolean;
+}
 
 const logSignature = 'WebSocketServer=>';
 const WebSocketServer = require('websocket').server;
@@ -42,9 +62,26 @@ const reqListener = (request, response) => {
   response.end();
 };
 
-let _instance = null;
+let _instance: WebSocketServerWrapper = null;
 export default class WebSocketServerWrapper {
-  constructor(port, options = {}) {
+  logSignature: string;
+  port: string | number;
+  originPredicate: Function;
+  onconnectAccepted: Function;
+  acceptProtocol: string;
+  onclose: Function;
+  onerror: Function;
+  onAuthRejectHandler: Function;
+  sinbinFilepath: string;
+  msgHandlers: {
+    utf8?: Function;
+    binary?: Function;
+  };
+
+  //refactor to proper type
+  wsServer?: any;
+
+  constructor(port: string | number, options: WebsocketServerOptionsType = {}) {
     if (_instance !== null) {
       throw new Error('WebSocketServerWrapper:: must be a singleton');
     }
@@ -94,7 +131,7 @@ export default class WebSocketServerWrapper {
   updateSinBin = async (request, add = true) => {
     if (autoSinBin) {
       if (add) {
-        const unbanFrom = Date.now() + TIME.DAY;
+        const unbanFrom = Date.now() + 1000 * 3600 * 24;
         sinbin[request.remoteAddress] = {
           unbanFrom,
           ausTime: dateUtils.getAusTimestamp(unbanFrom),

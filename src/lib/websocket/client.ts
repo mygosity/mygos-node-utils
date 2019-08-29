@@ -1,7 +1,13 @@
-import * as utils from '../../common';
+import WebSocket from 'ws';
+import logger from '../logger';
+import * as dateUtils from '../date';
+import * as utils from '../common';
+import { ListenersOptionType, WebsocketClientOptionsType } from './node/client';
+
+let instanceCount = 0;
 
 function WebsocketClientOptions() {
-  this.id = '000';
+  this.id = instanceCount++;
   this.retryLimit = -1;
   this.retryTimer = 10 * 1000;
   this.minTimeSinceLastUpdate = 2.5 * 1000;
@@ -15,13 +21,42 @@ function WebsocketClientOptions() {
 }
 const defaultWebsocketClientOptions = new WebsocketClientOptions();
 
-/**
- * Websocket client for a browser application
- * This will use an automatic keep alive system by default
- * which must be paied with the server.js located in the same folder
- */
 export default class WebSocketClient {
-  constructor(url, onmessage, listeners = {}, options = {}) {
+  logSignature: string;
+  connection: any;
+  url: string;
+  autoRetry: boolean;
+  retryLimit: number;
+  retryTimer: number;
+
+  minTimeSinceLastUpdate: number;
+  maxTimeSinceLastUpdate: number;
+  autoKeepAliveMaxTime: number;
+  keepAliveTimeInterval: number;
+  resetKeepAliveTimeOnPong: boolean;
+  autoKeepAliveCallback: Function;
+  socketargs: any[];
+
+  retryCount: number;
+  forcedClose: any;
+  prevEventTime: number;
+  keepAliveLoop: NodeJS.Timeout | number;
+  retryLoop: NodeJS.Timeout | number;
+  lastKeepAliveTime: number;
+
+  onmessage: Function;
+  onopen?: Function;
+  onerror?: Function;
+  onclose?: Function;
+  onping?: Function;
+  onpong?: Function;
+
+  constructor(
+    url: string,
+    onmessage: Function,
+    listeners: ListenersOptionType = {},
+    options: WebsocketClientOptionsType = {},
+  ) {
     this.connection = null;
     this.url = url;
     this.onmessage = onmessage;
@@ -81,14 +116,16 @@ export default class WebSocketClient {
     }
   };
 
+  //Sec-WebSocket-Protocol request header args
   loadWebsocketConnections = () => {
     this.connection =
-      this.socketargs !== undefined
-        ? new WebSocket(this.url, this.socketargs)
-        : new WebSocket(this.url);
+      this.socketargs !== undefined ? new WebSocket(this.url, this.socketargs) : new WebSocket(this.url);
     this.prevEventTime = Date.now();
 
+    this.connection.on('pong', this.onPong);
+
     this.connection.onopen = (event) => {
+      logger.report(this, 'onopen::');
       if (this.retryLoop != null) {
         utils.stopTimer(this.retryLoop);
       }
@@ -97,11 +134,12 @@ export default class WebSocketClient {
       this.forcedClose = null;
       this.startKeepAlive();
       if (this.onopen !== undefined) {
-        this.onopen(event, this.connection);
+        this.onopen(event);
       }
     };
 
     this.connection.onerror = (error) => {
+      logger.report(this, 'onerror:: error:');
       this.startRetrying();
       if (this.onerror !== undefined) {
         this.onerror(error);
@@ -109,9 +147,9 @@ export default class WebSocketClient {
     };
 
     this.connection.onclose = (event) => {
-      // console.log('onclose:: ');
-      // console.trace();
+      logger.report(this, 'onclose:: event: ');
       if (this.keepAliveLoop != null) {
+        // @ts-ignore
         clearInterval(this.keepAliveLoop);
       }
       this.connection = null;
@@ -131,7 +169,8 @@ export default class WebSocketClient {
     };
   };
 
-  forceConnectionClose = (msg) => {
+  forceConnectionClose = (msg?: string) => {
+    logger.report(this, 'forceConnectionClose::' + msg);
     this.forcedClose = msg;
     if (this.connection != null) {
       this.connection.close();
@@ -142,15 +181,18 @@ export default class WebSocketClient {
     const currentTime = Date.now();
     const msSinceLastUpdate = currentTime - this.prevEventTime;
     if (msSinceLastUpdate > this.maxTimeSinceLastUpdate) {
+      // logger.report(this, 'checkAliveStatus:: msSinceLastUpdate > this.maxTimeSinceLastUpdate');
       this.forceConnectionClose();
       this.startRetrying();
     } else if (msSinceLastUpdate > this.minTimeSinceLastUpdate) {
+      // logger.report(this, 'checkAliveStatus:: msSinceLastUpdate > this.minTimeSinceLastUpdate');
       this.handleKeepAlive();
     }
-    if (
-      this.lastKeepAliveTime == null ||
-      currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime
-    ) {
+    if (this.lastKeepAliveTime == null || currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime) {
+      // logger.report(
+      //   this,
+      //   'checkAliveStatus:: currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime',
+      // );
       this.handleKeepAlive();
     }
   };
@@ -170,6 +212,8 @@ export default class WebSocketClient {
 
   startRetrying = () => {
     if (this.autoRetry) {
+      logger.report(this, 'startRetrying::');
+      // this.forceConnectionClose('retrying');
       this.retryCount = 0;
       if (this.retryLoop == null) {
         this.startServer();
@@ -180,6 +224,7 @@ export default class WebSocketClient {
 
   startServer = () => {
     if (this.retryLimit < 0 || this.retryCount < this.retryLimit) {
+      logger.report(this, 'startRetrying:: this.retryCount < this.retryLimit: || this.retryLimit < 0');
       this.loadWebsocketConnections();
     } else {
       utils.stopTimer(this.retryLoop);

@@ -1,9 +1,16 @@
 import logger from '../logger';
 import * as consoleHelper from './helper';
+import { KeyValuePair } from '../typedefinitions';
 
 let _instance = null;
 
 export default class CommandLine {
+  logSignature: string;
+  refs: KeyValuePair<any>;
+  config: { readingCommands: boolean; parser?: KeyValuePair<any> };
+  commandInterceptor?: Function;
+  testing?: boolean;
+
   constructor(keyValueRefs, yourOwnRefsOnly = false) {
     if (_instance !== null) {
       throw new Error('CommandLine:: THERE CAN ONLY BE ONE, instance exists, this is a singleton');
@@ -48,14 +55,10 @@ export default class CommandLine {
         const target = consoleHelper.extractTarget(this.refs, inputFirstParam);
         logger.report(this, `commandLine=> commandHandler:: target: `, target);
         if (target) {
-          logger.report(
-            this,
-            `commandLine=> commandHandler:: firing command: spaceIndex: ` + spaceIndex,
-          );
+          logger.report(this, `commandLine=> commandHandler:: firing command: spaceIndex: ` + spaceIndex);
           if (spaceIndex !== -1) {
             const wordAfterSpace = input.substring(spaceIndex + 1);
-            const args =
-              spaceIndex !== -1 ? consoleHelper.extractArguments(this.refs, wordAfterSpace) : null;
+            const args = spaceIndex !== -1 ? consoleHelper.extractArguments(this.refs, wordAfterSpace) : null;
             target(...args);
           } else {
             target();
