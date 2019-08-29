@@ -2,9 +2,9 @@ import * as utils from '../common';
 import fileHelper from './index';
 import fs from 'fs';
 import prettier from 'prettier';
-import logger from '/src/utils/lib/logger';
+import { KeyValuePair } from '../typedefinitions';
 
-export function getAllFilesFromDirectory(baseDir, ext, options = {}) {
+export function getAllFilesFromDirectory(baseDir, ext, options: { excludeDirectories?: string[] } = {}): any[] {
   //index all json files for prettying up
   const files = fs.readdirSync(baseDir);
   const fileCollection = [];
@@ -45,14 +45,13 @@ export function getAllFilesFromDirectory(baseDir, ext, options = {}) {
     const files = fs.readdirSync(currentDir.path);
     files.map(_latestFileSearcher(currentDir.path + '/', directories, fileCollection));
   }
-  logger.report(
-    { logSignature: 'formatter=>' },
-    'getAllFilesFromDirectory:: length: ' + fileCollection.length,
-  );
+  console.log({
+    len: fileCollection.length,
+  });
   return fileCollection;
 }
 
-export function prettyFormat(files, parser = 'json') {
+export function prettyFormat(files: any[], parser: string = 'json') {
   for (let i = 0; i < files.length; ++i) {
     const { path } = files[i];
     let readData, data;
@@ -60,7 +59,6 @@ export function prettyFormat(files, parser = 'json') {
       readData = JSON.stringify(fileHelper.readFileSync(path));
       data = prettier.format(readData, { parser });
       fileHelper.writeToFile(path, data, { overwrite: true, append: false });
-      logger.report({ logSignature: 'formatter=>' }, 'prettyFormat:: i: ' + i);
     } catch (error) {
       console.log({
         path,
@@ -69,5 +67,4 @@ export function prettyFormat(files, parser = 'json') {
       });
     }
   }
-  logger.report({ logSignature: 'formatter=>' }, 'prettyFormat:: complete');
 }

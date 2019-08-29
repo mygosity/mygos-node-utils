@@ -4,7 +4,7 @@ import * as utils from '../common';
 const rl = require('readline');
 export const readline = rl.createInterface({ input: process.stdin, output: process.stdout });
 
-export function extractTarget(ref, input) {
+export function extractTarget(ref: any, input: string) {
   const methods = input.split('.');
   let target = ref[methods[0]];
   for (let i = 1; i < methods.length; ++i) {
@@ -13,8 +13,8 @@ export function extractTarget(ref, input) {
   return target;
 }
 
-export function extractArguments(ref, input) {
-  const args = input.split(',');
+export function extractArguments(ref: any, input: string) {
+  const args: any[] = input.split(',');
   for (let i = 0; i < args.length; ++i) {
     const current = args[i];
     // logger.log("extractArguments:: current: ", current);

@@ -1,9 +1,12 @@
 import logger from '../logger';
+import { KeyValuePair } from '../typedefinitions';
 
-let filelocks = {};
-let writequeue = {};
+let filelocks: KeyValuePair<any> = {};
+let writequeue: KeyValuePair<any> = {};
 
 class FileManager {
+  logSignature: string;
+
   constructor() {
     this.logSignature = 'FileManager=>';
   }
@@ -18,14 +21,7 @@ class FileManager {
    * @param {boolean} writeImmediately use false to write a batch of data together (use only with the same callback/options)
    * @param {object} argResolver an object that contains methods to handle the batching of arguments
    */
-  queue = (
-    filepath,
-    data,
-    args,
-    writeCallback,
-    writeImmediately = true,
-    argResolver = undefined,
-  ) => {
+  queue = (filepath, data, args, writeCallback, writeImmediately = true, argResolver = undefined) => {
     logger.report(this, 'queue::', filepath);
     if (writequeue[filepath] == null) {
       writequeue[filepath] = [];
@@ -44,12 +40,14 @@ class FileManager {
    * encloses it with the callback issued for it
    * @param {string} filepath
    */
-  releaseQueue(filepath) {
-    let copiedData = '',
-      writeCallback,
-      copiedArgs,
-      allNull = true;
+  releaseQueue(filepath: string) {
+    let copiedData: string = '',
+      writeCallback: Function,
+      copiedArgs: any[],
+      allNull: boolean = true;
+
     const target = writequeue[filepath];
+
     for (let i = 0; i < target.length; ++i) {
       if (target[i] != null) {
         if (copiedData.length > 0 && target[i].writeImmediately) {
@@ -60,10 +58,7 @@ class FileManager {
         if (writeCallback === undefined) {
           writeCallback = target[i].writeCallback;
         } else if (writeCallback !== target[i].writeCallback) {
-          logger.report(
-            this,
-            'releaseQueue:: detected a different writeCallback:: this should not be batched',
-          );
+          logger.report(this, 'releaseQueue:: detected a different writeCallback:: this should not be batched');
         }
         if (copiedArgs === undefined) {
           copiedArgs = target[i].args;
@@ -87,7 +82,7 @@ class FileManager {
     }
   }
 
-  locked = (filepath) => {
+  locked = (filepath: string): boolean => {
     return filelocks[filepath] === true;
   };
 
@@ -97,7 +92,7 @@ class FileManager {
    * @param { string } filepath file path to check if locked
    * @return { boolean } true if file was locked successfully, false if already locked
    */
-  tryLock = (filepath) => {
+  tryLock = (filepath: string): boolean => {
     if (filelocks[filepath] === true) {
       logger.report(this, { reason: 'lock: file is already locked:' + filepath, filelocks });
       return false;
@@ -106,7 +101,7 @@ class FileManager {
     return true;
   };
 
-  release = (filepath) => {
+  release = (filepath: string): void => {
     filelocks[filepath] = false;
     logger.report(this, 'release:: released file lock path :', filepath);
     if (writequeue[filepath] !== undefined && writequeue[filepath].length) {
@@ -117,7 +112,7 @@ class FileManager {
   /**
    * Debug functions listed below
    */
-  __logStatus = () => {
+  __logStatus = (): void => {
     console.log('logStatus:: filelocks');
     for (let i in filelocks) {
       console.log('filelocks:' + i, filelocks[i]);
@@ -129,7 +124,7 @@ class FileManager {
     }
   };
 
-  __status = () => {
+  __status = (): void => {
     this.__logStatus();
     logger.writelog(this, { src: this, filelocks, writequeue });
   };

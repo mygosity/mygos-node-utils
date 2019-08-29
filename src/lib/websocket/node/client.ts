@@ -2,6 +2,28 @@ import WebSocket from 'ws';
 import logger from '../../logger';
 import * as utils from '../../common';
 
+export interface ListenersOptionType {
+  onopen?: Function;
+  onerror?: (error: any) => void;
+  onclose?: Function;
+  onping?: Function;
+  onpong?: Function;
+}
+
+export interface WebsocketClientOptionsType {
+  id?: string | number;
+  autoRetry?: boolean;
+  retryLimit?: number;
+  retryTimer?: number;
+  minTimeSinceLastUpdate?: number;
+  maxTimeSinceLastUpdate?: number;
+  autoKeepAliveMaxTime?: number;
+  keepAliveTimeInterval?: number;
+  resetKeepAliveTimeOnPong?: boolean;
+  autoKeepAliveCallback?: Function;
+  socketargs?: any[];
+}
+
 let instanceCount = 0;
 
 function WebsocketClientOptions() {
@@ -24,7 +46,41 @@ const defaultWebsocketClientOptions = new WebsocketClientOptions();
  * ws package
  */
 export default class WebSocketClient {
-  constructor(url, onmessage, listeners = {}, options = {}) {
+  logSignature: string;
+  connection: any;
+  url: string;
+  autoRetry: boolean;
+  retryLimit: number;
+  retryTimer: number;
+
+  minTimeSinceLastUpdate: number;
+  maxTimeSinceLastUpdate: number;
+  autoKeepAliveMaxTime: number;
+  keepAliveTimeInterval: number;
+  resetKeepAliveTimeOnPong: boolean;
+  autoKeepAliveCallback: Function;
+  socketargs: any[];
+
+  retryCount: number;
+  forcedClose: any;
+  prevEventTime: number;
+  keepAliveLoop: NodeJS.Timeout | number;
+  retryLoop: NodeJS.Timeout | number;
+  lastKeepAliveTime: number;
+
+  onmessage: Function;
+  onopen?: Function;
+  onerror?: Function;
+  onclose?: Function;
+  onping?: Function;
+  onpong?: Function;
+
+  constructor(
+    url: string,
+    onmessage: Function,
+    listeners: ListenersOptionType = {},
+    options: WebsocketClientOptionsType = {},
+  ) {
     this.connection = null;
     this.url = url;
     this.onmessage = onmessage;
@@ -86,9 +142,7 @@ export default class WebSocketClient {
   //Sec-WebSocket-Protocol request header args
   loadWebsocketConnections = () => {
     this.connection =
-      this.socketargs !== undefined
-        ? new WebSocket(this.url, this.socketargs)
-        : new WebSocket(this.url);
+      this.socketargs !== undefined ? new WebSocket(this.url, this.socketargs) : new WebSocket(this.url);
     this.prevEventTime = Date.now();
 
     this.connection.on('pong', this.onPong);
@@ -107,7 +161,7 @@ export default class WebSocketClient {
       }
     };
 
-    this.connection.onerror = (event) => {
+    this.connection.onerror = (error: any) => {
       logger.report(this, 'onerror:: error:');
       // logger.report(this, 'onerror:: error:', event);
       this.startRetrying();
@@ -120,6 +174,7 @@ export default class WebSocketClient {
       logger.report(this, 'onclose:: event: ');
       // logger.report(this, 'onclose:: event: ', event);
       if (this.keepAliveLoop != null) {
+        // @ts-ignore
         clearInterval(this.keepAliveLoop);
       }
       this.connection = null;
@@ -139,7 +194,7 @@ export default class WebSocketClient {
     };
   };
 
-  forceConnectionClose = (msg) => {
+  forceConnectionClose = (msg?: string) => {
     logger.report(this, 'forceConnectionClose::' + msg);
     this.forcedClose = msg;
     if (this.connection != null) {
@@ -158,10 +213,7 @@ export default class WebSocketClient {
       // logger.report(this, 'checkAliveStatus:: msSinceLastUpdate > this.minTimeSinceLastUpdate');
       this.handleKeepAlive();
     }
-    if (
-      this.lastKeepAliveTime == null ||
-      currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime
-    ) {
+    if (this.lastKeepAliveTime == null || currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime) {
       // logger.report(
       //   this,
       //   'checkAliveStatus:: currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime',
@@ -197,10 +249,7 @@ export default class WebSocketClient {
 
   startServer = () => {
     if (this.retryLimit < 0 || this.retryCount < this.retryLimit) {
-      logger.report(
-        this,
-        'startRetrying:: this.retryCount < this.retryLimit: || this.retryLimit < 0',
-      );
+      logger.report(this, 'startRetrying:: this.retryCount < this.retryLimit: || this.retryLimit < 0');
       this.loadWebsocketConnections();
     } else {
       utils.stopTimer(this.retryLoop);

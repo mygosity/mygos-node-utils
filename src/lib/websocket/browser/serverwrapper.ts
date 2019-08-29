@@ -8,6 +8,9 @@ let ws,
  * for a browser connection
  */
 class WebsocketWrapper {
+  logSignature: string;
+  dataHandler: { origin: Function };
+
   constructor() {
     this.logSignature = 'WebsocketWrapper';
     this.dataHandler = {

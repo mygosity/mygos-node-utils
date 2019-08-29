@@ -4,6 +4,10 @@ import WebsocketClient from './client';
 
 let connection;
 class WebsocketClientWrapper {
+  logSignature: string;
+  identity: string;
+  client: WebsocketClient;
+
   constructor() {
     this.logSignature = 'WebsocketClientWrapper=>';
   }
