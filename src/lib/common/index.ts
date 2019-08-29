@@ -5,6 +5,16 @@ import { KeyValuePair } from '../typedefinitions';
 
 export const epsilon: number = 0.00001;
 
+export const invalidNumber = (data: any) => {
+  if (data == null || Array.isArray(data)) {
+    return true;
+  }
+  if (isNaN(Number(data))) {
+    return true;
+  }
+  return false;
+};
+
 export const isEmpty = (target: any) => {
   if (isObject(target)) {
     return isObjectEmpty(target);
@@ -25,7 +35,7 @@ export const prettyJson = (data: any, stringify: boolean = true): string => {
 };
 
 export const prettyWrapWithTimestamp = (data: any, stringify: boolean = true): string => {
-  let pack = dateUtils.wrapWithAusTimeStamp({ ...data });
+  let pack: any = dateUtils.wrapWithAusTimeStamp({ ...data });
   if (stringify) {
     pack = safeJsonStringify(pack);
   }
@@ -130,7 +140,11 @@ export function isObjectEmpty(target: any): boolean {
   return Object.entries(target).length === 0 && target.constructor === Object;
 }
 
-export function splitInReverseByCondition(filepath: string, condition: Function, inclusive: boolean = false): string[] {
+export function splitInReverseByCondition(
+  filepath: string,
+  condition: Function,
+  inclusive: boolean = false,
+): string[] {
   let i;
   for (i = filepath.length - 1; i >= 0; --i) {
     if (condition(filepath[i])) {
@@ -245,7 +259,11 @@ export const swapArrayElement = (list: any[], fromIndex: number, toIndex: number
   list[toIndex] = target;
 };
 
-export const swapElementToIndex = (list: any[], matchCondition: Function, targetIndex: number): any[] => {
+export const swapElementToIndex = (
+  list: any[],
+  matchCondition: Function,
+  targetIndex: number,
+): any[] => {
   const newList = [...list];
   let foundIndex = -1;
   for (let i = 0; i < list.length; ++i) {
@@ -282,7 +300,9 @@ export function downloadFile(response: KeyValuePair<any>, type: string, filename
       const downloadUrl = URL.createObjectURL(blob);
       const downloadLink = document.createElement('a');
       downloadLink.target = '_blank';
-      const downloadFileName = filename ? filename : response.headers['content-disposition'].split('=')[1];
+      const downloadFileName = filename
+        ? filename
+        : response.headers['content-disposition'].split('=')[1];
       downloadLink.download = downloadFileName.replace(/["\s]?/g, '');
       downloadLink.href = downloadUrl;
       downloadLink.click();
@@ -368,7 +388,11 @@ export function isClonedIn(target: any, sources: any): boolean {
   return isClone;
 }
 
-export function deepCloneObject(target: any, dupeChecker: any[] = [], skipCircularRef: boolean): any {
+export function deepCloneObject(
+  target: any,
+  dupeChecker: any[] = [],
+  skipCircularRef: boolean,
+): any {
   let clone = Array.isArray(target) ? [] : {};
   if (!dupeChecker.includes(target)) {
     dupeChecker.push(target);
@@ -408,7 +432,8 @@ export const priceFormatter = (amount: number, numDecimals: number = 2): string 
   const decimalModifier = numDecimals > 0 ? numDecimals + 1 : 0;
   let currentlength = amountString.length - 3 - decimalModifier;
   while (currentlength > 0) {
-    amountString = amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
+    amountString =
+      amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
     currentlength -= 3;
   }
   return '$' + amountString;
@@ -440,7 +465,10 @@ export const optionalDecimalFormat = (
 
 export const percentFormatter = (value: number): string => `${Math.round(value * 100)}%`;
 
-export const percentFormatterOptionalDecimal = (value: number, maxOptionalDecimals: number = 2): string => {
+export const percentFormatterOptionalDecimal = (
+  value: number,
+  maxOptionalDecimals: number = 2,
+): string => {
   return optionalDecimalFormat(value * 100, maxOptionalDecimals) + '%';
 };
 

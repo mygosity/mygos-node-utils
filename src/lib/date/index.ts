@@ -25,7 +25,9 @@ export const getAusTimestamp = (date, formatStr = 'YYYY-MM-DD HH:mm:ss'): string
         .format(formatStr);
 };
 
-export const wrapWithAusTimeStamp = (obj: any): any => {
+export const wrapWithAusTimeStamp = (
+  obj: any,
+): { timestamp: number; aussieTime: string; [key: string]: any } => {
   if (!utils.isObject(obj)) {
     if (Array.isArray(obj)) {
       obj = { ...obj };
