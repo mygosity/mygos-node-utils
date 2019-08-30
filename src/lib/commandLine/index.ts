@@ -7,11 +7,14 @@ let _instance = null;
 export default class CommandLine {
   logSignature: string;
   refs: KeyValuePair<any>;
-  config: { readingCommands: boolean; parser?: KeyValuePair<any> };
+  config: {
+    readingCommands: boolean;
+    parser?: KeyValuePair<any>;
+  };
   commandInterceptor?: Function;
   testing?: boolean;
 
-  constructor(keyValueRefs, yourOwnRefsOnly = false) {
+  constructor(keyValueRefs: KeyValuePair<any>, yourOwnRefsOnly: boolean = false) {
     if (_instance !== null) {
       throw new Error('CommandLine:: THERE CAN ONLY BE ONE, instance exists, this is a singleton');
     }
@@ -30,11 +33,11 @@ export default class CommandLine {
     };
   }
 
-  setCommandInterceptor = (func) => {
+  setCommandInterceptor = (func: Function) => {
     this.commandInterceptor = func;
   };
 
-  setConfig = (prop, value) => {
+  setConfig = (prop: string, value: any) => {
     if (prop == undefined) return;
     if (this.config[prop] !== undefined) {
       this.config[prop] = this.config.parser[prop](value);
@@ -42,7 +45,7 @@ export default class CommandLine {
     }
   };
 
-  commandHandler = (input) => {
+  commandHandler = (input: string) => {
     try {
       logger.report(this, `commandLine=> commandHandler:: handling input: ${input}`);
       if (
@@ -66,12 +69,15 @@ export default class CommandLine {
         }
       }
     } catch (error) {
-      logger.error(this, error, { funcName: 'commandHandler', input });
+      logger.error(this, error, {
+        funcName: 'commandHandler',
+        input,
+      });
     }
     consoleHelper.readline.prompt();
   };
 
-  startListeningForCommands = async () => {
+  startListeningForCommands = async (): Promise<string> => {
     try {
       if (this.config.readingCommands) {
         logger.report(this, 'commandLine=> is already reading commands');
@@ -82,7 +88,9 @@ export default class CommandLine {
       consoleHelper.readline.on('line', this._proxyHandler);
       consoleHelper.readline.prompt();
     } catch (error) {
-      logger.error(this, error, { funcName: 'startListeningForCommands' });
+      logger.error(this, error, {
+        funcName: 'startListeningForCommands',
+      });
       return 'commandLine=> failed to startListeningForCommands';
     }
     return 'commandLine=> has started to read commands';
