@@ -5,11 +5,22 @@ import { KeyValuePair } from '../typedefinitions';
 
 export const epsilon: number = 0.00001;
 
-export const isNumber = (input: string) => {
-  return !isNaN(Number(input));
-};
+export function tryParseNumber(input: string, defaultValue: any = null): any {
+  if (invalidNumber(input)) {
+    return defaultValue;
+  }
+  try {
+    return input.indexOf('.') === -1 ? parseInt(input) : parseFloat(input);
+  } catch (error) {
+    return defaultValue;
+  }
+}
 
-export const invalidNumber = (data: any) => {
+export function isNumber(input: string): boolean {
+  return !isNaN(Number(input));
+}
+
+export function invalidNumber(data: any): boolean {
   if (data == null || Array.isArray(data)) {
     return true;
   }
@@ -17,9 +28,9 @@ export const invalidNumber = (data: any) => {
     return true;
   }
   return false;
-};
+}
 
-export const isEmpty = (target: any) => {
+export function isEmpty(target: any): boolean {
   if (isObject(target)) {
     return isObjectEmpty(target);
   }
@@ -27,26 +38,30 @@ export const isEmpty = (target: any) => {
     return target.length === 0;
   }
   return false;
-};
+}
 
-export const prettyParse = (data: any, parser: string): any => {
+export function isObjectEmpty(target: any): boolean {
+  return Object.entries(target).length === 0 && target.constructor === Object;
+}
+
+export function prettyParse(data: any, parser: string): string {
   return prettier.format(data, { parser });
-};
+}
 
-export const prettyJson = (data: any, stringify: boolean = true): string => {
+export function prettyJson(data: any, stringify: boolean = true): string {
   const pack = stringify ? safeJsonStringify({ ...data }) : { ...data };
   return prettier.format(pack, { parser: 'json' });
-};
+}
 
-export const prettyWrapWithTimestamp = (data: any, stringify: boolean = true): string => {
+export function prettyWrapWithTimestamp(data: any, stringify: boolean = true): string {
   let pack: any = dateUtils.wrapWithAusTimeStamp({ ...data });
   if (stringify) {
     pack = safeJsonStringify(pack);
   }
   return prettier.format(pack, { parser: 'json' });
-};
+}
 
-export const circularStringify = (o: any): string => {
+export function circularStringify(o: any): string {
   let cache = [];
   const data = JSON.stringify(o, function(key, value) {
     if (typeof value === 'object' && value !== null) {
@@ -61,9 +76,9 @@ export const circularStringify = (o: any): string => {
   });
   cache = null;
   return data;
-};
+}
 
-export const safeJsonStringify = (data: any, ...args: any[]): string => {
+export function safeJsonStringify(data: any, ...args: any[]): string {
   let answer = null;
   try {
     answer = JSON.stringify(data);
@@ -80,9 +95,9 @@ export const safeJsonStringify = (data: any, ...args: any[]): string => {
     }
   }
   return '{}';
-};
+}
 
-const _prepJsonParse = (input: any): any => {
+function _prepJsonParse(input: string): any {
   // preserve newlines, etc - use valid JSON
   input = input
     .replace(/\\n/g, '\\n')
@@ -96,10 +111,10 @@ const _prepJsonParse = (input: any): any => {
   // remove non-printable and other non-valid JSON chars
   input = input.replace(/[\u0000-\u0019]+/g, '');
   return JSON.parse(input);
-};
+}
 
 //TODO:: create manual parser to handle really weird characters
-export const safeJsonParse = (data: any, ...args: any[]): any => {
+export function safeJsonParse(data: any, ...args: any[]): any {
   let answer = null;
   try {
     answer = JSON.parse(data);
@@ -117,9 +132,9 @@ export const safeJsonParse = (data: any, ...args: any[]): any => {
     }
   }
   return answer;
-};
+}
 
-export const clamp = (target: number, options: { min?: number; max?: number } = {}): number => {
+export function clamp(target: number, options: { min?: number; max?: number } = {}): number {
   if (options.max !== undefined && target > options.max) {
     return options.max;
   }
@@ -127,25 +142,25 @@ export const clamp = (target: number, options: { min?: number; max?: number } = 
     return options.min;
   }
   return target;
-};
+}
 
-export const round = (input: number, decimals: number = 0): number => {
+export function round(input: number, decimals: number = 0): number {
   if (decimals === 0) {
     return Math.round(input);
   }
   return Math.round(input * Math.pow(10, decimals)) / Math.pow(10, decimals);
-};
-
-export const autoWrap = (value: number, maxLen: number): number => {
-  return (maxLen + value) % maxLen;
-};
-
-export function isObjectEmpty(target: any): boolean {
-  return Object.entries(target).length === 0 && target.constructor === Object;
 }
 
-export function splitInReverseByCondition(filepath: string, condition: Function, inclusive: boolean = false): string[] {
-  let i;
+export function autoWrap(value: number, maxLen: number): number {
+  return (maxLen + value) % maxLen;
+}
+
+export function splitInReverseByCondition(
+  filepath: string,
+  condition: Function,
+  inclusive: boolean = false,
+): string[] {
+  let i: number;
   for (i = filepath.length - 1; i >= 0; --i) {
     if (condition(filepath[i])) {
       break;
@@ -253,13 +268,17 @@ export function arrayIndexOf(arr: any[], condition: Function): number {
   return -1;
 }
 
-export const swapArrayElement = (list: any[], fromIndex: number, toIndex: number): void => {
+export function swapArrayElement(list: any[], fromIndex: number, toIndex: number): void {
   const target = list[fromIndex];
   list[fromIndex] = list[toIndex];
   list[toIndex] = target;
-};
+}
 
-export const swapElementToIndex = (list: any[], matchCondition: Function, targetIndex: number): any[] => {
+export function swapElementToIndex(
+  list: any[],
+  matchCondition: Function,
+  targetIndex: number,
+): any[] {
   const newList = [...list];
   let foundIndex = -1;
   for (let i = 0; i < list.length; ++i) {
@@ -276,7 +295,7 @@ export const swapElementToIndex = (list: any[], matchCondition: Function, target
     swapArrayElement(newList, foundIndex, targetIndex);
   }
   return newList;
-};
+}
 
 /**
  * Will create a blob and manufacture a click event to force a download for streamed data
@@ -296,13 +315,14 @@ export function downloadFile(response: KeyValuePair<any>, type: string, filename
       const downloadUrl = URL.createObjectURL(blob);
       const downloadLink = document.createElement('a');
       downloadLink.target = '_blank';
-      const downloadFileName = filename ? filename : response.headers['content-disposition'].split('=')[1];
+      const downloadFileName = filename
+        ? filename
+        : response.headers['content-disposition'].split('=')[1];
       downloadLink.download = downloadFileName.replace(/["\s]?/g, '');
       downloadLink.href = downloadUrl;
       downloadLink.click();
     }
   } catch (e) {
-    //eslint-disable-next-line
     logger.log(e.message);
   }
 }
@@ -312,7 +332,7 @@ export function isObject(target: any): boolean {
   return type === 'object' && !Array.isArray(target);
 }
 
-export const recursiveToString = (target: any): any => {
+export function recursiveToString(target: any): any {
   let answer: any = `${target}`;
   if (isObject(target)) {
     answer = {};
@@ -326,7 +346,7 @@ export const recursiveToString = (target: any): any => {
     }
   }
   return answer;
-};
+}
 
 export function isObjectClonedShallow(target: any, source: any): boolean {
   let isCloned = true;
@@ -382,7 +402,11 @@ export function isClonedIn(target: any, sources: any): boolean {
   return isClone;
 }
 
-export function deepCloneObject(target: any, dupeChecker: any[] = [], skipCircularRef: boolean): any {
+export function deepCloneObject(
+  target: any,
+  dupeChecker: any[] = [],
+  skipCircularRef: boolean,
+): any {
   let clone = Array.isArray(target) ? [] : {};
   if (!dupeChecker.includes(target)) {
     dupeChecker.push(target);
@@ -410,7 +434,7 @@ export function deepCloneObject(target: any, dupeChecker: any[] = [], skipCircul
  * @param {number} numDecimals the number of decimals expected
  * @return {string} value after formatting with appropriate values
  */
-export const priceFormatter = (amount: number, numDecimals: number = 2): string | number => {
+export function priceFormatter(amount: number, numDecimals: number = 2): string | number {
   if (!amount.toFixed || isNaN(amount) || numDecimals < 0) {
     logger.log('priceFormatter:: amount is invalid.');
     return amount;
@@ -422,17 +446,18 @@ export const priceFormatter = (amount: number, numDecimals: number = 2): string 
   const decimalModifier = numDecimals > 0 ? numDecimals + 1 : 0;
   let currentlength = amountString.length - 3 - decimalModifier;
   while (currentlength > 0) {
-    amountString = amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
+    amountString =
+      amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
     currentlength -= 3;
   }
   return '$' + amountString;
-};
+}
 
-export const optionalDecimalFormat = (
+export function optionalDecimalFormat(
   value: number,
   maxOptionalDecimals: number = 2,
   roundingType: string = 'round',
-): string | number => {
+): string | number {
   const formatted = value;
   if (maxOptionalDecimals > 0 && formatted % 1 > 0) {
     const decimals = formatted % 1;
@@ -450,13 +475,18 @@ export const optionalDecimalFormat = (
     return formatted - decimals + relevantDecimals;
   }
   return formatted.toFixed ? formatted.toFixed(0) : formatted;
-};
+}
 
-export const percentFormatter = (value: number): string => `${Math.round(value * 100)}%`;
+export function percentFormatter(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
 
-export const percentFormatterOptionalDecimal = (value: number, maxOptionalDecimals: number = 2): string => {
+export function percentFormatterOptionalDecimal(
+  value: number,
+  maxOptionalDecimals: number = 2,
+): string {
   return optionalDecimalFormat(value * 100, maxOptionalDecimals) + '%';
-};
+}
 
 export function addWhiteSpaces(string, digit): string {
   const digitMatch = new RegExp('(\\d{' + digit + '})', 'g');

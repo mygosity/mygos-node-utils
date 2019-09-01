@@ -64,8 +64,8 @@ export default class WebSocketClient {
   retryCount: number;
   forcedClose: any;
   prevEventTime: number;
-  keepAliveLoop: NodeJS.Timeout | number;
-  retryLoop: NodeJS.Timeout | number;
+  keepAliveLoop: NodeJS.Timeout;
+  retryLoop: NodeJS.Timeout;
   lastKeepAliveTime: number;
 
   onmessage: (connection: WebSocket, message: WebSocket.MessageEvent) => void;
@@ -178,15 +178,12 @@ export default class WebSocketClient {
 
     this.connection.onclose = (event: WebSocket.CloseEvent): void => {
       logger.report(this, 'onclose:: event: ');
-      // logger.report(this, 'onclose:: event: ', event);
       if (this.keepAliveLoop != null) {
-        // @ts-ignore
         clearInterval(this.keepAliveLoop);
       }
       this.connection = null;
       this.keepAliveLoop = null;
       if (this.forcedClose == null) {
-        //restart the connection since we didn't force it to close
         this.startRetrying();
       }
       if (this.onclose !== undefined) {
@@ -212,21 +209,15 @@ export default class WebSocketClient {
     const currentTime = Date.now();
     const msSinceLastUpdate = currentTime - this.prevEventTime;
     if (msSinceLastUpdate > this.maxTimeSinceLastUpdate) {
-      // logger.report(this, 'checkAliveStatus:: msSinceLastUpdate > this.maxTimeSinceLastUpdate');
       this.forceConnectionClose();
       this.startRetrying();
     } else if (msSinceLastUpdate > this.minTimeSinceLastUpdate) {
-      // logger.report(this, 'checkAliveStatus:: msSinceLastUpdate > this.minTimeSinceLastUpdate');
       this.handleKeepAlive();
     }
     if (
       this.lastKeepAliveTime == null ||
       currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime
     ) {
-      // logger.report(
-      //   this,
-      //   'checkAliveStatus:: currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime',
-      // );
       this.handleKeepAlive();
     }
   };
@@ -247,7 +238,6 @@ export default class WebSocketClient {
   startRetrying = (): void => {
     if (this.autoRetry) {
       logger.report(this, 'startRetrying::');
-      // this.forceConnectionClose('retrying');
       this.retryCount = 0;
       if (this.retryLoop == null) {
         this.startServer();

@@ -5,7 +5,6 @@ import fileManager from '../file/manager';
 import path from 'path';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
-import { KeyValuePair } from '../typedefinitions';
 
 export interface ReadFileOptionsType {
   relativePath?: boolean;
@@ -31,7 +30,7 @@ export interface WriteFileOptionsType extends ReadFileOptionsType {
   checkFileSize?: boolean;
 }
 
-let BASEPATH = __dirname;
+let basepath: string = __dirname;
 
 function WriteFileOptions() {
   this.relativePath = true;
@@ -64,7 +63,7 @@ class FileHelper {
   }
 
   setBasePath = (path: string): void => {
-    BASEPATH = path;
+    basepath = path;
   };
 
   findLatestFile = (baseDir: string, filename: string): string => {
@@ -135,7 +134,7 @@ class FileHelper {
   };
 
   getResolvedPath = (relativePath: string): string => {
-    return path.resolve(BASEPATH, relativePath);
+    return path.resolve(basepath, relativePath);
   };
 
   fileExists = (filepath: string, options: ReadFileOptionsType = {}): boolean => {
@@ -506,13 +505,6 @@ const _appendToJsonFile = function(
         const line = str[i];
         if (line === '}' || line === ']') {
           dataEnd = str.substring(i);
-          // logger.report(fileHelper, '_appendToJsonFile:: stream.data: found closing brackets\n', {
-          //   byteCount,
-          //   dataEnd,
-          //   fileDescriptor,
-          //   diff: size - byteCount,
-          //   size,
-          // });
           const buffer = Buffer.from(data + dataEnd);
           fs.write(
             fileDescriptor,
@@ -562,7 +554,7 @@ function _getOppositeBracket(input: string): string | Error {
   }
 }
 
-function _isSizeExceeded(filepath: string, options: WriteFileOptionsType) {
+function _isSizeExceeded(filepath: string, options: WriteFileOptionsType): boolean {
   if (!fileHelper.fileExists(filepath)) return false;
   if (options.sizeLimit > -1) {
     const stats = fs.statSync(filepath);
@@ -578,15 +570,16 @@ function _getNextFileName(
   fileMap: any,
   dir: string,
   options: WriteFileOptionsType,
-): KeyValuePair<string> {
-  const [base, ext] = utils.splitInReverseByCondition(file, (i) => i === '.');
+): { nextFileName: string; prevFileName: string } {
+  const [base, ext] = utils.splitInReverseByCondition(file, (i: string) => i === '.');
   // console.log(base, ext);
-  let [words, numbers] = utils.splitInReverseByCondition(base, (i) => isNaN(Number(i)), true);
-  if (numbers === undefined) {
-    // @ts-ignore
-    numbers = 0;
-  }
-  let nextFileName = words + numbers + '.' + ext;
+  const [words, numbers] = utils.splitInReverseByCondition(
+    base,
+    (i: string) => isNaN(Number(i)),
+    true,
+  );
+  let count: number = utils.tryParseNumber(numbers, 0);
+  let nextFileName = words + count + '.' + ext;
   let prevFileName = file;
   const predicate = (nextFileName) => {
     if (options.checkFileSize) {
@@ -595,10 +588,9 @@ function _getNextFileName(
     return fileMap[nextFileName];
   };
   while (predicate(nextFileName)) {
-    // @ts-ignore
-    numbers++;
+    count++;
     prevFileName = nextFileName;
-    nextFileName = words + numbers + '.' + ext;
+    nextFileName = words + count + '.' + ext;
   }
   return { nextFileName, prevFileName };
 }
@@ -616,6 +608,6 @@ function _autoParseNextFileName(filepath: string, options: WriteFileOptionsType)
   return [dir, nextFileName];
 }
 
-export const _testPath = function(path) {
+export const _testPath = function(path: string): void {
   logger.report(fileHelper, '_testPath: ' + fileHelper.getResolvedPath(path));
 };
