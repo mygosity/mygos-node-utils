@@ -1,5 +1,5 @@
 import logger from '../logger';
-import * as utils from '../common';
+import utils from '../common';
 import { KeyValuePair } from '../typedefinitions';
 import rl from 'readline';
 
@@ -43,7 +43,11 @@ function primitiveParse(input: string): any {
   return stripSingleQuotes(input);
 }
 
-export function parseInputAsJsonObject(ref: KeyValuePair<any>, input: string, currentObject: any): any {
+export function parseInputAsJsonObject(
+  ref: KeyValuePair<any>,
+  input: string,
+  currentObject: any,
+): any {
   if (input.length === 0) {
     return currentObject;
   }
@@ -62,7 +66,11 @@ export function parseInputAsJsonObject(ref: KeyValuePair<any>, input: string, cu
   return answer;
 }
 
-export function parseInputAsJsonArray(ref: KeyValuePair<any>, input: string, currentObject: any): any {
+export function parseInputAsJsonArray(
+  ref: KeyValuePair<any>,
+  input: string,
+  currentObject: any,
+): any {
   if (input.length === 0) {
     return currentObject;
   }
@@ -80,7 +88,7 @@ export function parseInputAsJsonArray(ref: KeyValuePair<any>, input: string, cur
 export function parseInputToReference(ref: KeyValuePair<any>, input: string): any {
   let answer = null;
   if (input.length <= 1) {
-    return '';
+    return input;
   }
   const isArray = input[0] === '[' && input[input.length - 1] === ']';
   const isObject = input[0] === '{' && input[input.length - 1] === '}';

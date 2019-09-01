@@ -1,7 +1,7 @@
 import logger from '../../logger';
 import fileHelper from '../../file';
 import * as dateUtils from '../../date';
-import * as utils from '../../common';
+import utils from '../../common';
 import { server as WebSocketServer, connection, request, IMessage } from 'websocket';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import https, { ServerOptions } from 'https';
@@ -72,7 +72,7 @@ function WebsocketServerOptions() {
 }
 export const defaultWebsocketServerOptions = new WebsocketServerOptions();
 
-const reqListener = (request: IncomingMessage, response: ServerResponse) => {
+const reqListener = (request: IncomingMessage, response: ServerResponse): void => {
   logger.report(
     { logSignature },
     dateUtils.wrapWithAusTimeStamp({
@@ -188,7 +188,6 @@ export default class WebSocketServerWrapper {
 
   initSecureSocketService = (httpsOptions: ExpectedSecureOptions): void => {
     const secureServer = https.createServer(httpsOptions, reqListener);
-
     secureServer.listen(this.port, () => {
       logger.report(
         this,
@@ -198,22 +197,16 @@ export default class WebSocketServerWrapper {
         }),
       );
     });
-
     this.wsServer = new WebSocketServer({
       httpServer: secureServer,
       autoAcceptConnections: false,
-    });
-
-    this.wsServer.on('connect', function connection(wssServer) {
-      wssServer.send('connected successfully welcome');
     });
     this.startListening();
   };
 
   init = (): void => {
     this.server = http.createServer(reqListener);
-
-    this.server.listen(this.port, () => {
+    this.server.listen(this.port, (): void => {
       logger.report(
         this,
         dateUtils.wrapWithAusTimeStamp({

@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import logger from '../../logger';
-import * as utils from '../../common';
+import utils from '../../common';
 
 export interface ListenersOptionType {
   onopen?: (connection: WebSocket, event: WebSocket.OpenEvent) => void;
@@ -145,6 +145,11 @@ export default class WebSocketClient {
 
   //Sec-WebSocket-Protocol request header args
   loadWebsocketConnections = (): void => {
+    if (this.connection != null && (this.connection.OPEN || this.connection.CONNECTING)) {
+      console.log('connection already open returning...');
+      this.resetIntervals();
+      return;
+    }
     this.connection =
       this.socketargs !== undefined
         ? new WebSocket(this.url, this.socketargs)
@@ -155,9 +160,7 @@ export default class WebSocketClient {
 
     this.connection.onopen = (event: WebSocket.OpenEvent): void => {
       logger.report(this, 'onopen::');
-      if (this.retryLoop != null) {
-        utils.stopTimer(this.retryLoop);
-      }
+      this.resetIntervals();
       this.retryCount = 0;
       this.retryLoop = null;
       this.forcedClose = null;
@@ -254,9 +257,18 @@ export default class WebSocketClient {
       );
       this.loadWebsocketConnections();
     } else {
-      utils.stopTimer(this.retryLoop);
+      clearInterval(this.retryLoop);
       this.retryLoop = null;
     }
     this.retryCount++;
   };
+
+  resetIntervals(): void {
+    if (this.retryLoop != null) {
+      clearInterval(this.retryLoop);
+    }
+    if (this.keepAliveLoop != null) {
+      clearInterval(this.keepAliveLoop);
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import moment from 'moment-timezone';
-import * as utils from '../common';
+import utils from '../common';
 
 export const getDateFormat = (date, formatStr = 'YYYY-MM-DD'): moment => {
   return moment(date).format(formatStr);

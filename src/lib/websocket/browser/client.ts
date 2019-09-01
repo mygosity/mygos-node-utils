@@ -1,4 +1,4 @@
-import * as utils from '../../common';
+import utils from '../../common';
 import { WebsocketClientOptionsType } from '../node/client';
 
 interface BrowserListenerOptions {

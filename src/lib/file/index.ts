@@ -1,6 +1,6 @@
 import logger from '../logger';
 import { prefillDefaultOptions } from '../common';
-import * as utils from '../common';
+import utils from '../common';
 import fileManager from '../file/manager';
 import path from 'path';
 import fs from 'fs';
@@ -28,6 +28,7 @@ export interface WriteFileOptionsType extends ReadFileOptionsType {
   prepend?: string;
   sizeLimit?: number;
   checkFileSize?: boolean;
+  prettyFormat?: boolean;
 }
 
 let basepath: string = __dirname;
@@ -44,8 +45,9 @@ function WriteFileOptions() {
   this.prepend = undefined;
   this.sizeLimit = 5; //megabytes
   this.checkFileSize = true;
+  this.prettyFormat = false;
 }
-const defaultWriteFileOptions: WriteFileOptionsType = new WriteFileOptions();
+export const defaultWriteFileOptions: WriteFileOptionsType = new WriteFileOptions();
 
 function ReadFileOptions() {
   this.relativePath = true;
@@ -119,8 +121,8 @@ class FileHelper {
     const { prevFileName, nextFileName } = _getNextFileName(file, fileMap, dir, {
       checkFileSize: false,
     });
-    // console.log({ fileMap, nextFileName, prevFileName });
     const latestFilepath = dir + prevFileName;
+    logger.report(this, { latestFilepath, prevFileName, nextFileName });
     return latestFilepath;
   };
 
@@ -261,7 +263,11 @@ class FileHelper {
     const o = prefillDefaultOptions(options, defaultWriteFileOptions);
     filepath = this.getResolvedPath(filepath);
     logger.report(this, 'writeContinuousJson:: start', { filepath });
-    const jsondata = options.jsonStringify ? utils.safeJsonStringify(data, filepath) : data;
+    const jsondata = options.jsonStringify
+      ? options.prettyFormat
+        ? utils.prettyJson(data)
+        : utils.safeJsonStringify(data, filepath)
+      : data;
 
     if (o.autoCreatePath) {
       const [dir] = this.splitFolderAndFile(filepath);
@@ -578,14 +584,14 @@ function _getNextFileName(
     (i: string) => isNaN(Number(i)),
     true,
   );
-  let count: number = utils.tryParseNumber(numbers, 0);
-  let nextFileName = words + count + '.' + ext;
+  let nextFileName = file;
   let prevFileName = file;
-  const predicate = (nextFileName) => {
+  let count: number = utils.tryParseNumber(numbers, 0);
+  const predicate = (nextFileName: string): boolean => {
     if (options.checkFileSize) {
       return fileMap[nextFileName] && _isSizeExceeded(dir + nextFileName, options);
     }
-    return fileMap[nextFileName];
+    return fileMap[nextFileName] !== undefined;
   };
   while (predicate(nextFileName)) {
     count++;

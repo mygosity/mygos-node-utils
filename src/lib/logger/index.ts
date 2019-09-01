@@ -3,7 +3,7 @@ util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.depth = null;
 import fileHelper, { WriteFileOptionsType } from '../file';
 import * as dateUtils from '../date';
-import * as utils from '../common';
+import utils from '../common';
 
 export const logSignature = 'LogService=>';
 
@@ -30,6 +30,7 @@ interface ConfigurableLogServiceOptions {
   loggingPath?: string;
   defaultReportVoice?: boolean;
   reportVoice?: ReportVoiceMap;
+  prettyFormat?: boolean;
 }
 
 class LogService {
@@ -40,6 +41,7 @@ class LogService {
   reportVoice: ReportVoiceMap = {
     [logSignature]: { default: false },
   };
+  prettyFormat: boolean = false;
 
   configure = (options: ConfigurableLogServiceOptions = {}) => {
     if (options.errorPath !== undefined) {
@@ -55,6 +57,9 @@ class LogService {
     }
     if (options.defaultReportVoice !== undefined) {
       this.defaultReportVoice = options.defaultReportVoice;
+    }
+    if (options.prettyFormat !== undefined) {
+      this.prettyFormat = options.prettyFormat;
     }
   };
 
@@ -121,7 +126,10 @@ class LogService {
       }
       const obj = { timestamp: dateUtils.getAusTimestamp(Date.now()), data };
       fileHelper.assertDirExists(folderPath);
-      fileHelper.writeContinuousJson(`${folderPath}/${filename}.json`, obj, writeOptions);
+      fileHelper.writeContinuousJson(`${folderPath}/${filename}.json`, obj, {
+        prettyFormat: this.prettyFormat,
+        ...writeOptions,
+      });
     } catch (error) {
       this.outputMethod(error);
     }

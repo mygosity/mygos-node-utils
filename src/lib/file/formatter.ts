@@ -1,10 +1,13 @@
-import * as utils from '../common';
+import utils from '../common';
 import fileHelper from './index';
 import fs from 'fs';
-import prettier from 'prettier';
-import { KeyValuePair } from '../typedefinitions';
+import prettier, { BuiltInParserName } from 'prettier';
 
-export function getAllFilesFromDirectory(baseDir, ext, options: { excludeDirectories?: string[] } = {}): any[] {
+export function getAllFilesFromDirectory(
+  baseDir,
+  ext,
+  options: { excludeDirectories?: string[] } = {},
+): any[] {
   //index all json files for prettying up
   const files = fs.readdirSync(baseDir);
   const fileCollection = [];
@@ -51,7 +54,7 @@ export function getAllFilesFromDirectory(baseDir, ext, options: { excludeDirecto
   return fileCollection;
 }
 
-export function prettyFormat(files: any[], parser: string = 'json') {
+export function prettyFormat(files: any[], parser: BuiltInParserName = 'json') {
   for (let i = 0; i < files.length; ++i) {
     const { path } = files[i];
     let readData, data;
