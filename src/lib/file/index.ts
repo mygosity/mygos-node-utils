@@ -13,6 +13,12 @@ export interface ReadFileOptionsType {
   onError?: Function;
 }
 
+export interface SafeReadFilePromiseType {
+  data: any;
+  success: boolean;
+  error?: any;
+}
+
 export interface WriteFileOptionsType extends ReadFileOptionsType {
   append?: boolean;
   overwrite?: boolean;
@@ -138,13 +144,16 @@ class FileHelper {
     return fs.existsSync(filepath);
   };
 
-  safeReadFileSync = (filepath, options = {}): Promise<any> => {
-    return new Promise((resolve, reject) => {
+  safeReadFileSync = (
+    filepath: string,
+    options: ReadFileOptionsType = {},
+  ): Promise<SafeReadFilePromiseType> => {
+    return new Promise((resolve) => {
       try {
         const data = this.readFileSync(filepath, options);
-        resolve(data);
+        resolve({ data, success: true });
       } catch (error) {
-        resolve({ _failed: true, error });
+        resolve({ success: false, error, data: null });
       }
     });
   };
@@ -152,7 +161,12 @@ class FileHelper {
   readFileSync = (filepath: string, options: ReadFileOptionsType = {}): any => {
     const o = prefillDefaultOptions(options, defaultReadFileOptions);
     if (o.relativePath) filepath = this.getResolvedPath(filepath);
-    logger.report(this, 'readFileSync:: fileExists: ' + this.fileExists(filepath, o), filepath, o);
+    logger.report(
+      { logSignature: this.logSignature, funcSignature: 'readFileSync' },
+      'readFileSync:: fileExists: ' + this.fileExists(filepath, o),
+      filepath,
+      o,
+    );
     if (o.jsonParse) return utils.safeJsonParse(fs.readFileSync(filepath));
     return fs.readFileSync(filepath);
   };

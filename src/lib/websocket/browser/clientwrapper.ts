@@ -2,7 +2,7 @@ import eventcontrol from 'eventcontrol';
 
 import WebsocketClient from './client';
 
-let connection;
+let connection: WebSocket;
 class WebsocketClientWrapper {
   logSignature: string;
   identity: string;
@@ -12,7 +12,7 @@ class WebsocketClientWrapper {
     this.logSignature = 'WebsocketClientWrapper=>';
   }
 
-  init = (baseUrl, identity) => {
+  init = (baseUrl: string, identity: string): void => {
     this.identity = identity;
     this.client = new WebsocketClient(
       baseUrl,
@@ -27,11 +27,11 @@ class WebsocketClientWrapper {
     this.client.loadWebsocketConnections();
   };
 
-  heartBeat = () => {
+  heartBeat = (): void => {
     connection.send('pong');
   };
 
-  onOpen = (event, ctx) => {
+  onOpen = (ctx: WebSocket, event: Event): void => {
     connection = ctx;
     connection.send(
       JSON.stringify({
@@ -41,9 +41,8 @@ class WebsocketClientWrapper {
     );
   };
 
-  onMessage = (event) => {
-    // eslint-disable-next-line
-    let { type, data } = event;
+  onMessage = (ctx: WebSocket, message: MessageEvent): void => {
+    let { type, data } = message;
     if (data !== 'pulse') {
       data = JSON.parse(data);
       if (data.event !== undefined) {

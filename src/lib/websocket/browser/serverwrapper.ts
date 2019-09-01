@@ -1,7 +1,13 @@
-import WebSocketServer from '../node/server';
+import { connection, request, IMessage } from 'websocket';
+import WebSocketServer, { ConnectionMap } from '../node/server';
 
-let ws,
-  connections = {};
+let ws: WebSocketServer,
+  connections: { [identity: string]: connection } = {};
+
+interface OriginSignature {
+  event: string;
+  identity: string;
+}
 
 /**
  * This is a wrapper around the node websocket server to use to host a websocket
@@ -9,7 +15,7 @@ let ws,
  */
 class WebsocketWrapper {
   logSignature: string;
-  dataHandler: { origin: Function };
+  dataHandler: { origin: (connection: connection, data: OriginSignature) => void };
 
   constructor() {
     this.logSignature = 'WebsocketWrapper';
@@ -18,14 +24,14 @@ class WebsocketWrapper {
     };
   }
 
-  init = (port) => {
+  init = (port: string) => {
     ws = new WebSocketServer(port, {
       onutfmessage: this.onData,
     });
     ws.init();
   };
 
-  registerConnection = (connection, data) => {
+  registerConnection = (connection: connection, data: OriginSignature) => {
     console.log({
       msg: 'registerConnection::',
       data,
@@ -33,7 +39,7 @@ class WebsocketWrapper {
     connections[data.identity] = connection;
   };
 
-  onData = (connection, msg) => {
+  onData = (connection: connection, msg: string) => {
     if (msg === 'pong') {
       connection.send('pulse');
     } else {
@@ -46,11 +52,11 @@ class WebsocketWrapper {
     }
   };
 
-  send = (id, event, ...args) => {
+  send = (id: string, event: string, ...args: any[]) => {
     connections[id].send(JSON.stringify({ event, args }));
   };
 
-  sendall = (event, ...args) => {
+  sendall = (event: string, ...args: any[]) => {
     const data = JSON.stringify({ event, args });
     console.log(data);
     for (let id in connections) {

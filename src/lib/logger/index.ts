@@ -4,30 +4,44 @@ util.inspect.defaultOptions.depth = null;
 import fileHelper, { WriteFileOptionsType } from '../file';
 import * as dateUtils from '../date';
 import * as utils from '../common';
-import { KeyValuePair } from '../typedefinitions';
+
+export const logSignature = 'LogService=>';
 
 interface LoggableType {
   logSignature?: string;
-  srcSignature?: string;
-  [key: string]: any;
+  funcSignature?: string;
 }
 
 interface WriteCustomJsonOptionsType {
   path?: string;
   addFolder?: string;
 }
+interface ReportingVoiceValue {
+  default: boolean;
+  [funcSignature: string]: boolean;
+}
 
-function LogService() {
-  this.errorPath = 'logging/';
-  this.loggingPath = 'logging/';
-  this.defaultReportVoice = true;
+interface ReportVoiceMap {
+  [logSignature: string]: ReportingVoiceValue;
+}
 
-  this.reportVoice = {
-    ['LogService=>writelog::']: true,
-    ['LogService=>error::']: true,
+interface ConfigurableLogServiceOptions {
+  errorPath?: string;
+  loggingPath?: string;
+  defaultReportVoice?: boolean;
+  reportVoice?: ReportVoiceMap;
+}
+
+class LogService {
+  logSignature: string = logSignature;
+  errorPath: string = 'logging/';
+  loggingPath: string = 'logging/';
+  defaultReportVoice: boolean = true;
+  reportVoice: ReportVoiceMap = {
+    [logSignature]: { default: false },
   };
 
-  this.configure = (options = {}) => {
+  configure = (options: ConfigurableLogServiceOptions = {}) => {
     if (options.errorPath !== undefined) {
       this.errorPath = options.errorPath;
     }
@@ -44,28 +58,29 @@ function LogService() {
     }
   };
 
-  this.setReportingVoice = (key: string, value: any) => {
+  setReportingVoice = (key: string, value: any) => {
     this.reportVoice[key] = value;
   };
 
-  this.outputMethod = (...args: any[]) => {
+  outputMethod = (...args: any[]) => {
     console.log(...args);
   };
 
-  this.report = (target: LoggableType, ...args: any[]) => {
+  report = (target: LoggableType, ...args: any[]) => {
     if (this.allowedToLog(target)) {
       this.outputMethod(target.logSignature, ...args);
     }
   };
 
-  this.allowedToLog = (target: LoggableType) => {
-    if (target.logSignature == null) {
-      console.log('allowedToLog:: check -> target.logSignature: ' + target.logSignature);
-      console.trace('check here');
+  allowedToLog = (target: LoggableType) => {
+    const { logSignature, funcSignature } = target;
+    if (logSignature == null) {
+      console.log('allowedToLog:: check -> target.logSignature: ');
+      console.trace('logSignature was null or undefined | ' + logSignature);
       return false;
     }
-    if (this.reportVoice[target.logSignature] == null) {
-      this.reportVoice[target.logSignature] = this.defaultReportVoice;
+    if (this.reportVoice[logSignature] == null) {
+      this.reportVoice[logSignature] = { default: this.defaultReportVoice };
       console.log(
         'allowedToLog:: has turned logging by default for this signature: ' +
           target.logSignature +
@@ -73,23 +88,21 @@ function LogService() {
           this.defaultReportVoice,
       );
     }
-    const voice = this.reportVoice[target.logSignature];
-    if (voice === true) {
-      return true;
+    const voice = this.reportVoice[logSignature];
+    if (funcSignature === undefined) {
+      return voice.default;
     }
-    if (utils.isObject(voice)) {
-      if (target.srcSignature != null && voice[target.srcSignature]) {
-        return true;
-      }
+    if (voice[funcSignature] !== undefined) {
+      return voice[funcSignature];
     }
-    return false;
+    return voice.default;
   };
 
-  this.log = (...args: any[]) => {
+  log = (...args: any[]) => {
     this.outputMethod(...args);
   };
 
-  this.writeCustomJson = (
+  writeCustomJson = (
     filename: string,
     data: any,
     options: WriteCustomJsonOptionsType = {},
@@ -114,27 +127,27 @@ function LogService() {
     }
   };
 
-  this.logban = (src: LoggableType, ...args: any[]) => {
+  logban = (src: LoggableType, ...args: any[]) => {
     try {
-      this.report({ srcSignature: 'logban', ...src }, { func: `LogService=>logban::` });
+      this.report({ funcSignature: 'logban', ...src }, { func: `LogService=>logban::` });
       this.writeCustomJson(`logban`, { data: args });
     } catch (error) {
       this.outputMethod(error);
     }
   };
 
-  this.writelog = (src: LoggableType, ...args: any[]) => {
+  writelog = (src: LoggableType, ...args: any[]) => {
     try {
-      this.report({ srcSignature: 'writelog', ...src }, { func: `LogService=>writelog::` });
+      this.report({ funcSignature: 'writelog', ...src }, { func: `LogService=>writelog::` });
       this.writeCustomJson(`logservice`, { src, data: args });
     } catch (error) {
       this.outputMethod(error);
     }
   };
 
-  this.error = (src: LoggableType, error: any, ...args: any[]) => {
+  error = (src: LoggableType, error: any, ...args: any[]) => {
     try {
-      this.report(src, { srcSignature: 'error' }, { func: `LogService=>error::` });
+      this.report(src, { funcSignature: 'error' }, { func: `LogService=>error::` });
       this.writeCustomJson(
         `errors`,
         { src, errorMsg: error.toString(), data: args, error },

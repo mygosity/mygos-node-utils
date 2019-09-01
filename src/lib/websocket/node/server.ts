@@ -2,58 +2,79 @@ import logger from '../../logger';
 import fileHelper from '../../file';
 import * as dateUtils from '../../date';
 import * as utils from '../../common';
-import { KeyValuePair } from '../../typedefinitions';
+import { server as WebSocketServer, connection, request, IMessage } from 'websocket';
+import http, { IncomingMessage, ServerResponse } from 'http';
+import https, { ServerOptions } from 'https';
 
-export interface WebsocketServerOptionsType {
-  originPredicate?: Function;
-  onAuthRejectHandler?: Function;
-  onconnectAccepted?: Function;
-  acceptProtocol?: string;
-  onclose?: Function;
-  onerror?: Function;
-  onpong?: Function;
-  onutfmessage?: Function;
-  onbinarymessage?: Function;
-  msgHandlers?: {
-    onutfmessage?: Function;
-    onbinarymessage?: Function;
+export const logSignature = 'WebSocketServer=>';
+
+export interface ConnectionMap {
+  [remoteAddress: string]: {
+    timestamp: number;
+    aussieTime: string;
+    connection: connection;
   };
-  //node only
-  sinbinFilepath?: string;
-  autoSinBin?: boolean;
 }
 
-const logSignature = 'WebSocketServer=>';
-const WebSocketServer = require('websocket').server;
-const http = require('http');
-const https = require('https');
+export interface SinbinMap {
+  [key: string]: {
+    unbanFrom: number;
+    ausTime: string;
+  };
+}
 
-let server,
-  wsServer,
-  connections = {},
-  sinbin = {},
-  autoSinBin = true;
+export interface ExpectedSecureOptions extends ServerOptions {
+  key: string;
+  cert: string;
+}
+
+export interface WebsocketServerOptionsType {
+  acceptProtocol?: string;
+  originPredicate?: (origin: string, request: request) => boolean;
+  onAuthRejectHandler?: (request: request) => void;
+  onconnectAccepted?: (connection: connection, request: request) => void;
+  onclose?: (
+    connection: connection,
+    request: request,
+    reasonCode: number,
+    description: string,
+  ) => void;
+  onerror?: (connection: connection, error: Error) => void;
+  onping?: () => void;
+  onpong?: () => void;
+  onutfmessage?: (connection: connection, data: string) => void;
+  onbinarymessage?: (connection: connection, data: Buffer) => void;
+  msgHandlers?: {
+    onutfmessage?: (connection: connection, data: string) => void;
+    onbinarymessage?: (connection: connection, data: Buffer) => void;
+  };
+  //node only
+  autoSinBin?: boolean;
+  sinbinFilepath?: string;
+}
 
 function WebsocketServerOptions() {
-  this.originPredicate = (origin) => {
+  this.acceptProtocol = null;
+  this.originPredicate = (origin: string, request: request) => {
     // put logic here to detect whether the specified origin is allowed.
     logger.report({ logSignature }, { src: 'originIsAllowed', origin });
     return true;
   };
   //   this.acceptProtocol = 'echo-protocol';
-  this.onconnectAccepted = (connection, request) => {};
-  this.acceptProtocol = null;
+  this.onconnectAccepted = (connection: connection, request: request) => {};
   this.onclose = undefined;
   this.onerror = undefined;
-  this.onAuthRejectHandler = () => {};
+  this.onping = undefined;
+  this.onpong = undefined;
+  this.onAuthRejectHandler = (request: request) => {};
   this.autoSinBin = true;
   this.sinbinFilepath = 'sinbin.json';
 }
-const defaultWebsocketServerOptions = new WebsocketServerOptions();
+export const defaultWebsocketServerOptions = new WebsocketServerOptions();
 
-const reqListener = (request, response) => {
+const reqListener = (request: IncomingMessage, response: ServerResponse) => {
   logger.report(
-    this,
+    { logSignature },
     dateUtils.wrapWithAusTimeStamp({
       src: `http.createServer::`,
     }),
@@ -62,24 +83,35 @@ const reqListener = (request, response) => {
   response.end();
 };
 
+export let connections: ConnectionMap = {},
+  sinbin: SinbinMap = {};
+
 let _instance: WebSocketServerWrapper = null;
+
 export default class WebSocketServerWrapper {
   logSignature: string;
+  server: http.Server;
+  wsServer: WebSocketServer;
   port: string | number;
-  originPredicate: Function;
-  onconnectAccepted: Function;
   acceptProtocol: string;
-  onclose: Function;
-  onerror: Function;
-  onAuthRejectHandler: Function;
-  sinbinFilepath: string;
+  originPredicate: (origin: string, request: request) => boolean;
+  onconnectAccepted: (connection: connection, request: request) => void;
+  onclose: (
+    connection: connection,
+    request: request,
+    reasonCode: number,
+    description: string,
+  ) => void;
+  onerror: (connection: connection, error: Error) => void;
+  onping?: () => void;
+  onpong?: () => void;
+  onAuthRejectHandler: (request: request) => void;
   msgHandlers: {
-    utf8?: Function;
-    binary?: Function;
+    utf8?: (connection: connection, data: string) => void;
+    binary?: (connection: connection, data: Buffer) => void;
   };
-
-  //refactor to proper type
-  wsServer?: any;
+  autoSinBin: boolean;
+  sinbinFilepath: string;
 
   constructor(port: string | number, options: WebsocketServerOptionsType = {}) {
     if (_instance !== null) {
@@ -100,7 +132,7 @@ export default class WebSocketServerWrapper {
     this.sinbinFilepath = options.sinbinFilepath;
 
     if (options.autoSinBin) {
-      autoSinBin = true;
+      this.autoSinBin = true;
       this.loadSinBin();
     }
 
@@ -113,10 +145,10 @@ export default class WebSocketServerWrapper {
     }
   }
 
-  loadSinBin = () => {
+  loadSinBin = (): void => {
     const [dir] = utils.splitInReverseByCondition(
       this.sinbinFilepath,
-      (i) => i === '/' || i === '\\',
+      (i: string) => i === '/' || i === '\\',
     );
     fileHelper.assertDirExists(dir);
     try {
@@ -124,12 +156,12 @@ export default class WebSocketServerWrapper {
         sinbin = fileHelper.readFileSync(this.sinbinFilepath);
       }
     } catch (error) {
-      console.log(error);
+      logger.error(this, error);
     }
   };
 
-  updateSinBin = async (request, add = true) => {
-    if (autoSinBin) {
+  updateSinBin = async (request: request, add: boolean = true): Promise<any> => {
+    if (this.autoSinBin) {
       if (add) {
         const unbanFrom = Date.now() + 1000 * 3600 * 24;
         sinbin[request.remoteAddress] = {
@@ -146,22 +178,16 @@ export default class WebSocketServerWrapper {
     }
   };
 
-  getConnections = () => {
+  getConnections = (): ConnectionMap => {
     return connections;
   };
 
-  getWebsocketServer = () => {
-    return wsServer;
+  getWebsocketServer = (): WebSocketServer => {
+    return this.wsServer;
   };
 
-  initSecureSocketService = () => {
-    const secureServer = https.createServer(
-      {
-        cert: fileHelper.readFileSync('env/ws_cert.pem', { jsonParse: false }),
-        key: fileHelper.readFileSync('env/ws_key.pem', { jsonParse: false }),
-      },
-      reqListener,
-    );
+  initSecureSocketService = (httpsOptions: ExpectedSecureOptions): void => {
+    const secureServer = https.createServer(httpsOptions, reqListener);
 
     secureServer.listen(this.port, () => {
       logger.report(
@@ -184,10 +210,10 @@ export default class WebSocketServerWrapper {
     this.startListening();
   };
 
-  init = () => {
-    server = http.createServer(reqListener);
+  init = (): void => {
+    this.server = http.createServer(reqListener);
 
-    server.listen(this.port, () => {
+    this.server.listen(this.port, () => {
       logger.report(
         this,
         dateUtils.wrapWithAusTimeStamp({
@@ -198,19 +224,14 @@ export default class WebSocketServerWrapper {
     });
 
     this.wsServer = new WebSocketServer({
-      httpServer: server,
-      // You should not use autoAcceptConnections for production
-      // applications, as it defeats all standard cross-origin protection
-      // facilities built into the protocol and the browser.  You should
-      // *always* verify the connection's origin and decide whether or not
-      // to accept it.
+      httpServer: this.server,
       autoAcceptConnections: false,
     });
     this.startListening();
   };
 
-  startListening = () => {
-    this.wsServer.on('request', (request) => {
+  startListening = (): void => {
+    this.wsServer.on('request', (request: request): void => {
       let sinbinned = false;
       if (sinbin[request.remoteAddress] !== undefined) {
         if (Date.now() < sinbin[request.remoteAddress].unbanFrom) {
@@ -225,7 +246,7 @@ export default class WebSocketServerWrapper {
       }
       if (sinbinned || !this.originPredicate(request.origin, request)) {
         logger.report(this, 'request rejected: ' + request.remoteAddress);
-        if (!sinbinned && autoSinBin) {
+        if (!sinbinned && this.autoSinBin) {
           this.updateSinBin(request, true);
         }
         // Make sure we only accept requests from an allowed origin
@@ -244,6 +265,7 @@ export default class WebSocketServerWrapper {
       const connection = request.accept(this.acceptProtocol, request.origin);
 
       if (connections[connection.remoteAddress] === undefined) {
+        // @ts-ignore
         connections[connection.remoteAddress] = dateUtils.wrapWithAusTimeStamp({
           connection,
         });
@@ -258,22 +280,30 @@ export default class WebSocketServerWrapper {
         }),
       );
 
-      connection.on('message', (message) => {
+      connection.on('message', (message: IMessage): void => {
         const type = message.type;
         if (this.msgHandlers[type] !== undefined) {
           this.msgHandlers[type](connection, message[type + 'Data']);
         }
       });
 
-      connection.on('ping', (cancelFunction, buffer) => {
-        connection.pong();
+      connection.on('ping', (): void => {
+        if (this.onping) {
+          this.onping();
+        } else {
+          // @ts-ignore
+          connection.pong();
+        }
       });
 
-      connection.on('pong', () => {
+      connection.on('pong', (): void => {
         // keep the connection alive by resetting the timer
+        if (this.onpong) {
+          this.onpong();
+        }
       });
 
-      connection.on('close', (reasonCode, description) => {
+      connection.on('close', (reasonCode: number, description: string): void => {
         logger.report(
           this,
           dateUtils.wrapWithAusTimeStamp({
@@ -284,13 +314,13 @@ export default class WebSocketServerWrapper {
           }),
         );
         if (this.onclose !== undefined) {
-          this.onclose(connection, request);
+          this.onclose(connection, request, reasonCode, description);
         }
         delete connections[connection.remoteAddress];
       });
 
       // [ { Error: read ECONNRESET at TCP.onread (net.js:622:25) errno: 'ECONNRESET', code: 'ECONNRESET', syscall: 'read' } ] }
-      connection.on('error', (error) => {
+      connection.on('error', (error: Error): void => {
         if (this.onerror !== undefined) {
           this.onerror(connection, error);
         }
