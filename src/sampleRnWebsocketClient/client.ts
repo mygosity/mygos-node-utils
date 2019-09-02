@@ -1,5 +1,21 @@
-import utils from '../../common';
-import { WebsocketClientOptionsType } from '../node/client';
+import * as utils from 'build/lib/common';
+
+type WebSocket = any;
+type MessageEvent = any;
+
+function prefillDefaultOptions(options: any, defaultOptions: any): any {
+  if (options === null || options === undefined) {
+    //take care not to mutate the returned default here else all defaults will be affected
+    return defaultOptions;
+  } else {
+    for (let prop in defaultOptions) {
+      if (options[prop] === undefined) {
+        options[prop] = defaultOptions[prop];
+      }
+    }
+  }
+  return options;
+}
 
 interface BrowserListenerOptions {
   onopen?: (connection: WebSocket, event: Event) => void;
@@ -9,20 +25,32 @@ interface BrowserListenerOptions {
   onpong?: (connection: WebSocket) => void;
 }
 
-function WebsocketClientOptions() {
-  this.id = '000';
-  this.retryLimit = -1;
-  this.retryTimer = 10 * 1000;
-  this.minTimeSinceLastUpdate = 2.5 * 1000;
-  this.maxTimeSinceLastUpdate = 10 * 1000;
-  this.autoRetry = true;
-  this.autoKeepAliveMaxTime = 1 * 60 * 1000;
-  this.keepAliveTimeInterval = 1000;
-  this.autoKeepAliveCallback = undefined;
-  this.resetKeepAliveTimeOnPong = undefined;
-  this.socketargs = undefined;
+export interface WebsocketClientOptionsType {
+  id?: string | number;
+  autoRetry?: boolean;
+  retryLimit?: number;
+  retryTimer?: number;
+  minTimeSinceLastUpdate?: number;
+  maxTimeSinceLastUpdate?: number;
+  autoKeepAliveMaxTime?: number;
+  keepAliveTimeInterval?: number;
+  resetKeepAliveTimeOnPong?: boolean;
+  autoKeepAliveCallback?: () => void;
+  socketargs?: any;
 }
-const defaultWebsocketClientOptions = new WebsocketClientOptions();
+const defaultWebsocketClientOptions: WebsocketClientOptionsType = {
+  id: '000',
+  retryLimit: -1,
+  retryTimer: 10 * 1000,
+  minTimeSinceLastUpdate: 2.5 * 1000,
+  maxTimeSinceLastUpdate: 10 * 1000,
+  autoRetry: true,
+  autoKeepAliveMaxTime: 1 * 60 * 1000,
+  keepAliveTimeInterval: 1000,
+  autoKeepAliveCallback: undefined,
+  resetKeepAliveTimeOnPong: undefined,
+  socketargs: undefined,
+};
 
 /**
  * Websocket client for a browser application
@@ -68,7 +96,7 @@ export default class WebSocketClient {
     this.connection = null;
     this.url = url;
     this.onmessage = onmessage;
-    options = utils.prefillDefaultOptions(options, defaultWebsocketClientOptions);
+    options = prefillDefaultOptions(options, defaultWebsocketClientOptions);
     this.logSignature = `WebSocketClient${options.id}=>`;
 
     //optional
@@ -133,10 +161,13 @@ export default class WebSocketClient {
       return;
     }
 
-    this.connection =
-      this.socketargs !== undefined
-        ? new WebSocket(this.url, this.socketargs)
-        : new WebSocket(this.url);
+    if (this.socketargs !== undefined) {
+      //@ts-ignore
+      this.connection = new WebSocket(this.url, this.socketargs);
+    } else {
+      //@ts-ignore
+      this.connection = new WebSocket(this.url);
+    }
     this.prevEventTime = Date.now();
 
     this.connection.onopen = (event: Event): void => {
@@ -203,6 +234,7 @@ export default class WebSocketClient {
   };
 
   handleKeepAlive(): void {
+    //@ts-ignore
     if (this.connection != null && this.connection.readyState === WebSocket.OPEN) {
       this.lastKeepAliveTime = Date.now();
       this.autoKeepAliveCallback();

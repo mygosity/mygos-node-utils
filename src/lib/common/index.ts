@@ -4,7 +4,7 @@ import * as maths from './maths';
 import * as inputhandlers from './inputhandlers';
 import * as objectarrayutils from './objectarray';
 import logger from '../logger';
-import { KeyValuePair } from '../typedefinitions';
+import { Dictionary } from '../typedefinitions';
 
 /**
  * Auto mutates options and copies any properties from a default options structure
@@ -14,10 +14,7 @@ import { KeyValuePair } from '../typedefinitions';
 * @param {object} options custom options
 * @param {object} defaultOptions the default options to always have
 */
-export function prefillDefaultOptions(
-  options: KeyValuePair<any>,
-  defaultOptions: KeyValuePair<any>,
-): KeyValuePair<any> {
+export function prefillDefaultOptions(options: Dictionary<any>, defaultOptions: Dictionary<any>): Dictionary<any> {
   if (options === null || options === undefined) {
     //take care not to mutate the returned default here else all defaults will be affected
     return defaultOptions;
@@ -51,7 +48,7 @@ export function stopTimer(timeoutCall: NodeJS.Timeout | any): void {
  * @param {string} type the header string required to download the file
  * @param {string} filename the filename specified usually in the header
  */
-export function downloadFile(response: KeyValuePair<any>, type: string, filename: string): void {
+export function downloadFile(response: Dictionary<any>, type: string, filename: string): void {
   const data = response.data;
   try {
     if (data && (data.size || data.length) > 0) {
@@ -63,9 +60,7 @@ export function downloadFile(response: KeyValuePair<any>, type: string, filename
       const downloadUrl = URL.createObjectURL(blob);
       const downloadLink = document.createElement('a');
       downloadLink.target = '_blank';
-      const downloadFileName = filename
-        ? filename
-        : response.headers['content-disposition'].split('=')[1];
+      const downloadFileName = filename ? filename : response.headers['content-disposition'].split('=')[1];
       downloadLink.download = downloadFileName.replace(/["\s]?/g, '');
       downloadLink.href = downloadUrl;
       downloadLink.click();

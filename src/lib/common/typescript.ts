@@ -1,4 +1,6 @@
-import * as utils from '../common';
+import { prefillDefaultOptions } from '../common';
+import { isEmpty, isObject } from '../common/validation';
+import { Dictionary } from '../typedefinitions';
 
 const TAB = '\t',
   ENDLINE = '\n',
@@ -19,26 +21,48 @@ const TYPE_OBJECT = 'object',
   TYPE_NULLABLE = '?',
   TYPE_DEFAULT_ANY = 'any';
 
-const shouldSurroundWithQuotes = (type: string): boolean => {
+function removeAllWhiteSpaces(input: string): string {
+  let answer = '';
+  for (let i = 0; i < input.length; ++i) {
+    if (input[i] !== WHITESPACE) {
+      answer += input[i];
+    }
+  }
+  return answer;
+}
+
+export function capitalizeInterfaceName(input: string): string {
+  let answer = input.charAt(0).toUpperCase() + removeAllWhiteSpaces(input.substring(1));
+  return answer;
+}
+
+function shouldSurroundWithQuotes(type: string): boolean {
   return type.indexOf(WHITESPACE) !== -1 || !isNaN(Number(type[0]));
-};
+}
 
-const printObjectKey = (type: string, optionalTypeDecorator: string) =>
-  shouldSurroundWithQuotes(type) ? `'${type}${optionalTypeDecorator}': ` : `${type}${optionalTypeDecorator}: `;
+function printObjectKey(type: string, optionalTypeDecorator: string) {
+  return shouldSurroundWithQuotes(type) ? `'${type}${optionalTypeDecorator}': ` : `${type}${optionalTypeDecorator}: `;
+}
 
-const printArrBracketsForEachDepth = (depth: number): string => {
+function printArrBracketsForEachDepth(depth: number): string {
   let a = EMPTY_STRING;
   for (let i = 0; i < depth; ++i) a += ARRAY_BRACKETS;
   return a;
-};
+}
 
-const printTabsForEachDepth = (depth: number): string => {
+function printTabsForEachDepth(depth: number): string {
   let answer = EMPTY_STRING;
   for (let i = 0; i < depth; ++i) answer += TAB;
   return answer;
-};
+}
 
-const parsedArrayType = (data: any, depth: number = 1, arrayDepth: number = 1): string => {
+function parsedArrayType(
+  type: string,
+  data: any,
+  optionalData: any,
+  depth: number = 1,
+  arrayDepth: number = 1,
+): string {
   let answer = EMPTY_STRING,
     ending = printArrBracketsForEachDepth(arrayDepth) + COMMA;
 
@@ -59,8 +83,8 @@ const parsedArrayType = (data: any, depth: number = 1, arrayDepth: number = 1): 
       } else {
         allnull = false;
         if (Array.isArray(current)) {
-          answer += parsedArrayType(data, depth + 1, arrayDepth + 1);
-        } else if (utils.isObject(current)) {
+          answer += parsedArrayType(type, data, optionalData, depth + 1, arrayDepth + 1);
+        } else if (isObject(current)) {
           for (let prop in current) {
             model[prop] = current[prop];
           }
@@ -77,19 +101,50 @@ const parsedArrayType = (data: any, depth: number = 1, arrayDepth: number = 1): 
   }
   if (allnull) {
     answer = TYPE_DEFAULT_ANY;
-  } else if (!utils.isEmpty(model)) {
+  } else if (!isEmpty(model)) {
     for (let prop in nullableProps) {
       const temp = model[prop];
       delete model[prop];
       model[prop + TYPE_NULLABLE] = temp;
     }
-    answer += parsedDataType(null, model, depth - 1);
+    if (optionalData.queuedInterfaces === null && type !== null) {
+      answer += parsedDataType(null, model, optionalData, depth - 1);
+    } else {
+      answer += capitalizeInterfaceName(type) + optionalData.defaultInterfaceNameEnding;
+      optionalData.queuedInterfaces[answer] = model;
+    }
   }
   answer += ending;
   return answer;
-};
+}
 
-const parsedDataType = (type: string, data: any, depth: number = 1): string => {
+function parsedObjectType(
+  type: string,
+  fromParsedArrayType: boolean,
+  data: any,
+  optionalData: ParseOptions,
+  depth: number,
+) {
+  let answer = '';
+  let ending = '';
+  if (optionalData.queuedInterfaces !== null && type !== null) {
+    answer = capitalizeInterfaceName(type) + optionalData.defaultInterfaceNameEnding;
+    optionalData.queuedInterfaces[answer] = data;
+  } else {
+    answer = LEFT_BRACE + ENDLINE;
+    for (let i = 0; i < depth; ++i) ending += TAB;
+    for (let perType in data) {
+      answer += parsedDataType(perType, data[perType], optionalData, depth + 1);
+    }
+    ending += RIGHT_BRACE;
+  }
+  if (!fromParsedArrayType) {
+    ending += COMMA;
+  }
+  return [answer, ending];
+}
+
+function parsedDataType(type: string, data: any, optionalData: any, depth: number = 1): string {
   let answer = EMPTY_STRING,
     ending = EMPTY_STRING;
 
@@ -109,17 +164,11 @@ const parsedDataType = (type: string, data: any, depth: number = 1): string => {
     if (data == null) {
       answer += TYPE_DEFAULT_ANY + SEMICOLON;
     } else if (Array.isArray(data)) {
-      answer += parsedArrayType(data, depth + 1);
-    } else if (utils.isObject(data)) {
-      answer += LEFT_BRACE + ENDLINE;
-      for (let i = 0; i < depth; ++i) ending += TAB;
-      for (let perType in data) {
-        answer += parsedDataType(perType, data[perType], depth + 1);
-      }
-      ending += RIGHT_BRACE;
-      if (!fromParsedArrayType) {
-        ending += COMMA;
-      }
+      answer += parsedArrayType(type, data, optionalData, depth + 1);
+    } else if (isObject(data)) {
+      const [first, last] = parsedObjectType(type, fromParsedArrayType, data, optionalData, depth);
+      answer += first;
+      ending += last;
     }
   }
   answer += ending;
@@ -127,19 +176,34 @@ const parsedDataType = (type: string, data: any, depth: number = 1): string => {
     answer += ENDLINE;
   }
   return answer;
-};
+}
+
+interface ParseOptions {
+  queuedInterfaces: Dictionary<any>;
+  defaultInterfaceNameEnding: string;
+}
 
 export interface ConvertToTypeOptions {
-  excludeTypes?: string[];
-  headerBlockComment?: string;
+  excludeTypes?: string[]; // list of all interface properties to exclude from mapping
+  autoInnerInterface?: boolean; // automatically create interfaces if a property is another object construct
+  maxAutoInnerInterfaceDepth?: number; // specify the depth at which to automatically create interfaces inside an object (1 is 1 past the root)
+  defaultInterfaceNameEnding?: string; // the string to append to automatic interface names
+  defaultExport?: boolean; // default choice to export
+  autoExportMap?: { [interfaceName: string]: boolean }; // map of all interface names and choice to export
+  headerCommentMap?: { [interfaceName: string]: string }; // custom comments mapped to interface names in a dictionary
 }
 
 const defaultConvertToTypeOptions: ConvertToTypeOptions = {
   excludeTypes: [],
-  headerBlockComment: EMPTY_STRING,
+  autoInnerInterface: false,
+  maxAutoInnerInterfaceDepth: -1,
+  defaultExport: true,
+  autoExportMap: null,
+  headerCommentMap: null,
+  defaultInterfaceNameEnding: 'Type',
 };
 
-export const prettifyCommentBlock = (input: string[]): string => {
+export function prettifyCommentBlock(input: string[]): string {
   let answer = `${COMMENT_BLOCK_START}` + COMMENT_BLOCK_NEXT_LINE;
   for (let i = 0; i < input.length; ++i) {
     answer += input[i];
@@ -148,20 +212,66 @@ export const prettifyCommentBlock = (input: string[]): string => {
     }
   }
   return answer + `${ENDLINE}${COMMENT_BLOCK_END}${ENDLINE}`;
-};
+}
 
-export const convertToTypeDefinition = (interfaceName: string, data: any, options = {}): string => {
-  const { excludeTypes, headerBlockComment } = utils.prefillDefaultOptions(options, defaultConvertToTypeOptions);
-  let answer = headerBlockComment;
-  answer += `export interface ${interfaceName} ${LEFT_BRACE}${ENDLINE}`;
-  let exclusions = {};
-  for (let i = 0; i < excludeTypes.length; ++i) {
-    exclusions[excludeTypes[i]] = true;
+export function convertToTypeDefinition(
+  interfaceName: string,
+  data: any,
+  options: ConvertToTypeOptions = {},
+  recursionDepth: number = 1,
+): string {
+  options = prefillDefaultOptions(options, defaultConvertToTypeOptions);
+
+  let answer = '';
+  if (options.headerCommentMap != null && options.headerCommentMap[interfaceName] !== undefined) {
+    answer += options.headerCommentMap[interfaceName];
   }
-  for (let type in data) {
-    if (!excludeTypes[type]) {
-      answer += parsedDataType(type, data[type], 1);
+  let exportString = options.defaultExport ? 'export ' : '';
+  if (options.autoExportMap != null && options.autoExportMap[interfaceName] !== undefined) {
+    exportString = options.autoExportMap[interfaceName] ? 'export ' : '';
+  }
+  answer += `${exportString}interface ${interfaceName} ${LEFT_BRACE}${ENDLINE}`;
+
+  let exclusions: Dictionary<boolean> = {};
+  for (let i = 0; i < options.excludeTypes.length; ++i) {
+    exclusions[options.excludeTypes[i]] = true;
+  }
+
+  const shouldCreateInterface =
+    (options.maxAutoInnerInterfaceDepth === -1 || options.maxAutoInnerInterfaceDepth >= recursionDepth) &&
+    options.autoInnerInterface;
+
+  const queuedInterfaces: Dictionary<any> = shouldCreateInterface ? {} : null;
+  const parseOptions: ParseOptions = {
+    queuedInterfaces,
+    defaultInterfaceNameEnding: options.defaultInterfaceNameEnding,
+  };
+
+  if (Array.isArray(data)) {
+    answer += parsedDataType(interfaceName, data, parseOptions, 1);
+  } else {
+    for (let type in data) {
+      if (!exclusions[type]) {
+        const currentData = data[type];
+        answer += parsedDataType(type, currentData, parseOptions, 1);
+      }
     }
   }
-  return answer + RIGHT_BRACE + SEMICOLON;
-};
+  answer = answer + RIGHT_BRACE + SEMICOLON + ENDLINE + ENDLINE;
+  if (parseOptions.queuedInterfaces !== null) {
+    answer += recursivelyHandleQueuedInterfaces(parseOptions.queuedInterfaces, options, recursionDepth + 1);
+  }
+  return answer;
+}
+
+function recursivelyHandleQueuedInterfaces(
+  queuedInterfaces: Dictionary<any>,
+  options: ConvertToTypeOptions,
+  recursionDepth: number,
+): string {
+  let answer = '';
+  for (let type in queuedInterfaces) {
+    answer += convertToTypeDefinition(type, queuedInterfaces[type], options, recursionDepth);
+  }
+  return answer;
+}

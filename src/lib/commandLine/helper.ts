@@ -1,6 +1,6 @@
 import logger from '../logger';
 import utils from '../common';
-import { KeyValuePair } from '../typedefinitions';
+import { Dictionary } from '../typedefinitions';
 import rl from 'readline';
 
 export const readline = rl.createInterface({ input: process.stdin, output: process.stdout });
@@ -43,11 +43,7 @@ function primitiveParse(input: string): any {
   return stripSingleQuotes(input);
 }
 
-export function parseInputAsJsonObject(
-  ref: KeyValuePair<any>,
-  input: string,
-  currentObject: any,
-): any {
+export function parseInputAsJsonObject(ref: Dictionary<any>, input: string, currentObject: any): any {
   if (input.length === 0) {
     return currentObject;
   }
@@ -66,11 +62,7 @@ export function parseInputAsJsonObject(
   return answer;
 }
 
-export function parseInputAsJsonArray(
-  ref: KeyValuePair<any>,
-  input: string,
-  currentObject: any,
-): any {
+export function parseInputAsJsonArray(ref: Dictionary<any>, input: string, currentObject: any): any {
   if (input.length === 0) {
     return currentObject;
   }
@@ -85,7 +77,7 @@ export function parseInputAsJsonArray(
   return answer;
 }
 
-export function parseInputToReference(ref: KeyValuePair<any>, input: string): any {
+export function parseInputToReference(ref: Dictionary<any>, input: string): any {
   let answer = null;
   if (input.length <= 1) {
     return input;
@@ -120,7 +112,7 @@ export function isQuotedSyntax(input: string): boolean {
   return false;
 }
 
-export function extractTarget(ref: KeyValuePair<any>, input: string): any {
+export function extractTarget(ref: Dictionary<any>, input: string): any {
   const methods = input.split('.');
   let target = ref[methods[0]];
   if (target === undefined) return undefined;
@@ -173,9 +165,9 @@ function smartSplitArgument(input: string): string[] {
   return answer;
 }
 
-export function extractArguments(ref: KeyValuePair<any>, input: string) {
+export function extractArguments(ref: Dictionary<any>, input: string) {
   const args: any[] = smartSplitArgument(input);
-  console.log({ args });
+  console.log('extractArguments:: before |', { args });
   for (let i = 0; i < args.length; ++i) {
     const current = args[i];
     if (current === 'null') {
@@ -205,5 +197,6 @@ export function extractArguments(ref: KeyValuePair<any>, input: string) {
       }
     }
   }
+  console.log('extractArguments:: after | ', { args });
   return args;
 }

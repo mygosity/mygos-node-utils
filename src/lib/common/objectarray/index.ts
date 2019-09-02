@@ -1,10 +1,10 @@
 import * as validator from '../validation';
 import logger from '../../logger';
-import { KeyValuePair } from '../../typedefinitions';
+import { Dictionary } from '../../typedefinitions';
 
 export const emptyFunctionCall = (): void => {};
 
-export async function promiseAllObject(object: KeyValuePair<Promise<any>>): Promise<any> {
+export async function promiseAllObject(object: Dictionary<Promise<any>>): Promise<any> {
   for (let key in object) {
     object[key] = await object[key];
   }
@@ -70,11 +70,7 @@ export function swapArrayElement(list: any[], fromIndex: number, toIndex: number
   list[toIndex] = target;
 }
 
-export function swapElementToIndex(
-  list: any[],
-  matchCondition: Function,
-  targetIndex: number,
-): any[] {
+export function swapElementToIndex(list: any[], matchCondition: Function, targetIndex: number): any[] {
   const newList = [...list];
   let foundIndex = -1;
   for (let i = 0; i < list.length; ++i) {
@@ -109,11 +105,7 @@ export function recursiveToString(target: any): any {
   return answer;
 }
 
-export function deepCloneObject(
-  target: any,
-  dupeChecker: any[] = [],
-  skipCircularRef: boolean,
-): any {
+export function deepCloneObject(target: any, dupeChecker: any[] = [], skipCircularRef: boolean): any {
   let clone = Array.isArray(target) ? [] : {};
   if (!dupeChecker.includes(target)) {
     dupeChecker.push(target);

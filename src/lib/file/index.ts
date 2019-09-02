@@ -74,12 +74,7 @@ class FileHelper {
     const files = fs.readdirSync(baseDir);
     const fileCollection = [];
     const directories = [];
-    const _latestFileSearcher = (
-      base: string,
-      baseDir: string,
-      directories: any[],
-      fileCollection: any[],
-    ) => {
+    const _latestFileSearcher = (base: string, baseDir: string, directories: any[], fileCollection: any[]) => {
       return (currentFileName: string) => {
         const stats = fs.statSync(baseDir + currentFileName);
         if (stats.isDirectory()) {
@@ -145,10 +140,7 @@ class FileHelper {
     return fs.existsSync(filepath);
   };
 
-  safeReadFileSync = (
-    filepath: string,
-    options: ReadFileOptionsType = {},
-  ): Promise<SafeReadFilePromiseType> => {
+  safeReadFileSync = (filepath: string, options: ReadFileOptionsType = {}): Promise<SafeReadFilePromiseType> => {
     return new Promise((resolve) => {
       try {
         const data = this.readFileSync(filepath, options);
@@ -195,14 +187,10 @@ class FileHelper {
     });
   };
 
-  writeToFile = async (
-    filepath: string,
-    data: any,
-    options: WriteFileOptionsType = {},
-  ): Promise<any> => {
+  writeToFile = async (filepath: string, data: any, options: WriteFileOptionsType = {}): Promise<any> => {
     const o = prefillDefaultOptions(options, defaultWriteFileOptions);
     if (!o.overwrite && o.append && this.fileExists(filepath, o)) {
-      return this.appendToFile(filepath, o.jsonStringify ? utils.safeJsonStringify(data) : data, o);
+      return this.appendToFile(filepath, data, o);
     }
     if (o.relativePath) filepath = this.getResolvedPath(filepath);
     if (o.autoCreatePath) {
@@ -222,22 +210,14 @@ class FileHelper {
           fileManager.queue(filepath, data, [o, resolve, reject], _promisedWriteToFile, true);
         }
       } else {
-        logger.report(
-          this,
-          'writeToFile:: safely aborted due to options set: ' + filepath,
-          options,
-        );
+        logger.report(this, 'writeToFile:: safely aborted due to options set: ' + filepath, options);
         resolve('writeToFile:: safely aborted due to options set filepath: ' + filepath);
       }
     });
   };
 
   //TODO:: add size limit check here too
-  appendToFile = async (
-    filepath: string,
-    data: any,
-    options: WriteFileOptionsType = {},
-  ): Promise<any> => {
+  appendToFile = async (filepath: string, data: any, options: WriteFileOptionsType = {}): Promise<any> => {
     const o = prefillDefaultOptions(options, defaultWriteFileOptions);
     if (!this.fileExists(filepath, o)) {
       this.writeToFile(filepath, data, o);
@@ -255,16 +235,13 @@ class FileHelper {
     });
   };
 
-  writeContinuousJson = async (
-    filepath: string,
-    data: any,
-    options: WriteFileOptionsType,
-  ): Promise<any> => {
+  writeContinuousJson = async (filepath: string, data: any, options: WriteFileOptionsType): Promise<any> => {
     const o = prefillDefaultOptions(options, defaultWriteFileOptions);
     filepath = this.getResolvedPath(filepath);
     logger.report(this, 'writeContinuousJson:: start', { filepath });
-    const jsondata = options.jsonStringify
-      ? options.prettyFormat
+
+    const jsondata = o.jsonStringify
+      ? o.prettyFormat
         ? utils.prettyJson(data)
         : utils.safeJsonStringify(data, filepath)
       : data;
@@ -278,10 +255,7 @@ class FileHelper {
       if (_isSizeExceeded(filepath, o)) {
         const [dir, file] = _autoParseNextFileName(filepath, o);
         filepath = dir + file;
-        logger.report(
-          fileHelper,
-          'writeContinuousJson:: size limit exceeded, using new file name: ' + filepath,
-        );
+        logger.report(fileHelper, 'writeContinuousJson:: size limit exceeded, using new file name: ' + filepath);
       }
       if (fileManager.tryLock(filepath)) {
         _writeJsonFile(filepath, jsondata, o, resolve, reject);
@@ -291,14 +265,7 @@ class FileHelper {
           copiedArgs[1] = copiedArgs[1].concat(newArgs[1]);
           copiedArgs[2] = copiedArgs[2].concat(newArgs[2]);
         };
-        fileManager.queue(
-          filepath,
-          jsondata,
-          [o, [resolve], [reject]],
-          _writeJsonFile,
-          false,
-          argumentBatcher,
-        );
+        fileManager.queue(filepath, jsondata, [o, [resolve], [reject]], _writeJsonFile, false, argumentBatcher);
       }
     });
   };
@@ -350,7 +317,11 @@ const _promisedWriteToFile = (
   resolve: Function,
   reject: Function,
 ): void => {
-  const writtenData = o.jsonStringify ? utils.safeJsonStringify(data, filepath) : data;
+  const writtenData = o.jsonStringify
+    ? o.prettyFormat
+      ? utils.prettyJson(data)
+      : utils.safeJsonStringify(data, filepath)
+    : data;
   fs.writeFile(filepath, writtenData, function(error) {
     fileManager.release(filepath);
     if (error) {
@@ -373,23 +344,24 @@ const _promisedAppendToFile = (
   resolve: Function,
   reject: Function,
 ): void => {
-  fs.appendFile(
-    filepath,
-    o.jsonStringify ? utils.safeJsonStringify(data, filepath) : data,
-    function(error) {
-      fileManager.release(filepath);
-      if (error) {
-        logger.error({ logSignature }, error, {
-          src: 'FileHelper',
-          funcName: 'appendToFile',
-        });
-        reject(error);
-      }
-      const successMsg = 'appendToFile:: completed: ' + filepath;
-      logger.report({ logSignature }, successMsg);
-      resolve(successMsg);
-    },
-  );
+  const writtenData = o.jsonStringify
+    ? o.prettyFormat
+      ? utils.prettyJson(data)
+      : utils.safeJsonStringify(data, filepath)
+    : data;
+  fs.appendFile(filepath, writtenData, function(error) {
+    fileManager.release(filepath);
+    if (error) {
+      logger.error({ logSignature }, error, {
+        src: 'FileHelper',
+        funcName: 'appendToFile',
+      });
+      reject(error);
+    }
+    const successMsg = 'appendToFile:: completed: ' + filepath;
+    logger.report({ logSignature }, successMsg);
+    resolve(successMsg);
+  });
 };
 
 const _writeJsonFile = function(
@@ -512,35 +484,30 @@ const _appendToJsonFile = function(
         if (line === '}' || line === ']') {
           dataEnd = str.substring(i);
           const buffer = Buffer.from(data + dataEnd);
-          fs.write(
-            fileDescriptor,
-            buffer,
-            0,
-            buffer.length,
-            size - byteCount >= 0 ? size - byteCount : 0,
-            function(filewriteError) {
-              if (filewriteError) {
-                logger.error(fileHelper, filewriteError, {
-                  src: 'FileHelper_Priv',
-                  funcName: '_appendToJsonFile|on("data")|write',
-                  filepath,
-                  data,
-                  stat,
-                  streamArgs,
-                  size,
-                  fileDescriptor,
-                  buffer,
-                });
-                onFail(filewriteError);
-                return _batchHandlePromise(reject, filewriteError);
-              }
-              fs.close(fileDescriptor, function() {
-                fileManager.release(filepath);
-                logger.report(fileHelper, '_appendToJsonFile:: success: path:\n' + filepath);
-                _batchHandlePromise(resolve, '_appendToJsonFile:: success: path:' + filepath);
+          fs.write(fileDescriptor, buffer, 0, buffer.length, size - byteCount >= 0 ? size - byteCount : 0, function(
+            filewriteError,
+          ) {
+            if (filewriteError) {
+              logger.error(fileHelper, filewriteError, {
+                src: 'FileHelper_Priv',
+                funcName: '_appendToJsonFile|on("data")|write',
+                filepath,
+                data,
+                stat,
+                streamArgs,
+                size,
+                fileDescriptor,
+                buffer,
               });
-            },
-          );
+              onFail(filewriteError);
+              return _batchHandlePromise(reject, filewriteError);
+            }
+            fs.close(fileDescriptor, function() {
+              fileManager.release(filepath);
+              logger.report(fileHelper, '_appendToJsonFile:: success: path:\n' + filepath);
+              _batchHandlePromise(resolve, '_appendToJsonFile:: success: path:' + filepath);
+            });
+          });
           stream.close();
           return;
         }
@@ -579,11 +546,7 @@ function _getNextFileName(
 ): { nextFileName: string; prevFileName: string } {
   const [base, ext] = utils.splitInReverseByCondition(file, (i: string) => i === '.');
   // console.log(base, ext);
-  const [words, numbers] = utils.splitInReverseByCondition(
-    base,
-    (i: string) => isNaN(Number(i)),
-    true,
-  );
+  const [words, numbers] = utils.splitInReverseByCondition(base, (i: string) => isNaN(Number(i)), true);
   let nextFileName = file;
   let prevFileName = file;
   let count: number = utils.tryParseNumber(numbers, 0);

@@ -1,3 +1,3 @@
-export interface KeyValuePair<T> {
+export interface Dictionary<T> {
   [key: string]: T;
 }

@@ -1,20 +1,20 @@
 import logger from '../logger';
 import * as consoleHelper from './helper';
-import { KeyValuePair } from '../typedefinitions';
+import { Dictionary } from '../typedefinitions';
 
 let _instance = null;
 
 export default class CommandLine {
   logSignature: string;
-  refs: KeyValuePair<any>;
+  refs: Dictionary<any>;
   config: {
     readingCommands: boolean;
-    parser?: KeyValuePair<any>;
+    parser?: Dictionary<any>;
   };
   commandInterceptor?: Function;
   testing?: boolean;
 
-  constructor(keyValueRefs: KeyValuePair<any>, yourOwnRefsOnly: boolean = false) {
+  constructor(keyValueRefs: Dictionary<any>, yourOwnRefsOnly: boolean = false) {
     if (_instance !== null) {
       throw new Error('CommandLine:: THERE CAN ONLY BE ONE, instance exists, this is a singleton');
     }
