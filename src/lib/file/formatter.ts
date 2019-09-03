@@ -3,11 +3,7 @@ import fileHelper from './index';
 import fs from 'fs';
 import prettier, { BuiltInParserName } from 'prettier';
 
-export function getAllFilesFromDirectory(
-  baseDir,
-  ext,
-  options: { excludeDirectories?: string[] } = {},
-): any[] {
+export function getAllFilesFromDirectory(baseDir, ext, options: { excludeDirectories?: string[] } = {}): any[] {
   //index all json files for prettying up
   const files = fs.readdirSync(baseDir);
   const fileCollection = [];
@@ -17,7 +13,7 @@ export function getAllFilesFromDirectory(
       if (options.excludeDirectories) {
         const [first, lastDirectory] = utils.splitInReverseByCondition(
           baseDir.substring(0, baseDir.length - 1),
-          (i) => i === '/',
+          (i: string) => i === '/',
         );
         if (options.excludeDirectories.includes(lastDirectory)) {
           return;

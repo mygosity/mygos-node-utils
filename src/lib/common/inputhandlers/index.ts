@@ -104,15 +104,15 @@ export function safeJsonParse(data: any, ...args: any[]): any {
 }
 
 export function splitInReverseByCondition(
-  filepath: string,
-  condition: Function,
+  input: string,
+  condition: (char: string, index: number) => boolean,
   inclusive: boolean = false,
 ): string[] {
   let i: number;
-  for (i = filepath.length - 1; i >= 0; --i) {
-    if (condition(filepath[i])) {
+  for (i = input.length - 1; i >= 0; --i) {
+    if (condition(input[i], i)) {
       break;
     }
   }
-  return [filepath.substring(0, inclusive ? i + 1 : i), filepath.substring(i + 1)];
+  return [input.substring(0, inclusive ? i + 1 : i), input.substring(i + 1)];
 }

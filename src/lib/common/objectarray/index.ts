@@ -4,9 +4,12 @@ import { Dictionary } from '../../typedefinitions';
 
 export const emptyFunctionCall = (): void => {};
 
-export async function promiseAllObject(object: Dictionary<Promise<any>>): Promise<any> {
+export async function promiseAllObject(
+  object: Dictionary<Promise<any>>,
+  transformFunction: Function = null,
+): Promise<any> {
   for (let key in object) {
-    object[key] = await object[key];
+    object[key] = transformFunction === null ? await object[key] : transformFunction(await object[key]);
   }
   return object;
 }

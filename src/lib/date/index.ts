@@ -1,7 +1,10 @@
 import moment from 'moment-timezone';
 import utils from '../common';
 
-export const getDateFormat = (date: Date | string, formatStr: string = 'YYYY-MM-DD'): moment => {
+export const getDateFormat = (
+  date: Date | number | string,
+  formatStr: string = 'YYYY-MM-DD',
+): moment => {
   return moment(date).format(formatStr);
 };
 

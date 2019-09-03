@@ -48,8 +48,8 @@ export default class WebSocketClient {
   retryCount: number;
   forcedClose?: string;
   prevEventTime: number;
-  keepAliveLoop: NodeJS.Timeout;
-  retryLoop: NodeJS.Timeout;
+  keepAliveLoop: NodeJS.Timeout | number;
+  retryLoop: NodeJS.Timeout | number;
   lastKeepAliveTime: number;
 
   onmessage: (connection: WebSocket, message: MessageEvent) => void;
@@ -127,12 +127,6 @@ export default class WebSocketClient {
   };
 
   loadWebsocketConnections = (): void => {
-    if (this.connection != null && (this.connection.OPEN || this.connection.CONNECTING)) {
-      console.log('connection already open returning...');
-      this.resetIntervals();
-      return;
-    }
-
     this.connection =
       this.socketargs !== undefined
         ? new WebSocket(this.url, this.socketargs)
@@ -140,7 +134,9 @@ export default class WebSocketClient {
     this.prevEventTime = Date.now();
 
     this.connection.onopen = (event: Event): void => {
-      this.resetIntervals();
+      if (this.retryLoop != null) {
+        utils.stopTimer(this.retryLoop);
+      }
       this.retryCount = 0;
       this.retryLoop = null;
       this.forcedClose = null;
@@ -158,7 +154,10 @@ export default class WebSocketClient {
     };
 
     this.connection.onclose = (event: Event): void => {
+      // console.log('onclose:: ');
+      // console.trace();
       if (this.keepAliveLoop != null) {
+        // @ts-ignore
         clearInterval(this.keepAliveLoop);
       }
       this.connection = null;
@@ -234,13 +233,4 @@ export default class WebSocketClient {
     }
     this.retryCount++;
   };
-
-  resetIntervals(): void {
-    if (this.retryLoop != null) {
-      clearInterval(this.retryLoop);
-    }
-    if (this.keepAliveLoop != null) {
-      clearInterval(this.keepAliveLoop);
-    }
-  }
 }
