@@ -94,10 +94,7 @@ class LogService {
       );
     }
     const voice = this.reportVoice[logSignature];
-    if (funcSignature === undefined) {
-      return voice.default;
-    }
-    if (voice[funcSignature] !== undefined) {
+    if (funcSignature !== undefined && voice[funcSignature] !== undefined) {
       return voice[funcSignature];
     }
     return voice.default;

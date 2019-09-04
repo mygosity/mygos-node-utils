@@ -155,7 +155,7 @@ class FileHelper {
     const o = prefillDefaultOptions(options, defaultReadFileOptions);
     if (o.relativePath) filepath = this.getResolvedPath(filepath);
     logger.report(
-      { logSignature: this.logSignature, funcSignature: 'readFileSync' },
+      { logSignature, funcSignature: 'readFileSync' },
       'readFileSync:: fileExists: ' + this.fileExists(filepath, o),
       filepath,
       o,
@@ -167,7 +167,12 @@ class FileHelper {
   readFile = async (filepath: string, options: ReadFileOptionsType = {}): Promise<any> => {
     const o = prefillDefaultOptions(options, defaultReadFileOptions);
     if (o.relativePath) filepath = this.getResolvedPath(filepath);
-    logger.report(this, 'readFile:: fileExists: ' + this.fileExists(filepath, o), filepath, o);
+    logger.report(
+      { logSignature, funcSignature: 'readFile' },
+      'readFile:: fileExists: ' + this.fileExists(filepath, o),
+      filepath,
+      o,
+    );
 
     return new Promise((resolve, reject) => {
       fs.readFile(filepath, function(error, data) {
