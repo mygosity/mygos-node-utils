@@ -18,12 +18,12 @@ export function prettyParse(data: any, parser: BuiltInParserName): string {
 }
 
 export function prettyJson(data: any, stringify: boolean = true): string {
-	const pack = stringify ? safeJsonStringify({ ...data }) : { ...data };
+	const pack = stringify ? safeJsonStringify(data) : data;
 	return prettier.format(pack, { parser: 'json' });
 }
 
 export function prettyWrapWithTimestamp(data: any, stringify: boolean = true): string {
-	let pack: any = dateUtils.wrapWithAusTimeStamp({ ...data });
+	let pack: any = dateUtils.wrapWithAusTimeStamp(data);
 	if (stringify) {
 		pack = safeJsonStringify(pack);
 	}
