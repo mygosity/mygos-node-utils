@@ -16,7 +16,7 @@ export const timeDifference = (from: number, to: AcceptableDateFormat, type: str
 	return fromTime.diff(toTime, type);
 };
 
-export const getAusTimestamp = (date: AcceptableDateFormat, formatStr: string = 'YYYY-MM-DD HH:mm:ss'): string => {
+export const getAusTimestamp = (date: AcceptableDateFormat, formatStr: string = 'YYYY-MM-DD HH:mm:ss.SSS'): string => {
 	return date
 		? moment(date)
 				.tz('Australia/Sydney')
