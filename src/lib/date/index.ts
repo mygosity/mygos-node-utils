@@ -26,12 +26,12 @@ export const getAusTimestamp = (date: AcceptableDateFormat, formatStr: string = 
 				.format(formatStr);
 };
 
-export const wrapWithAusTimeStamp = (obj: any): { timestamp: number; aussieTime: string; [key: string]: any } => {
+export const wrapWithAusTimeStamp = (obj: any, key?: string): any => {
 	if (!utils.isObject(obj)) {
 		if (Array.isArray(obj)) {
-			obj = { ...obj };
+			obj = key !== undefined ? { [key]: [...obj] } : { data: [...obj] };
 		} else {
-			obj = { key: obj };
+			obj = { [key]: obj };
 		}
 	}
 	const timestamp = Date.now();

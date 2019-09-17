@@ -22,6 +22,7 @@ export interface WriteFileOptionsType extends ReadFileOptionsType {
 	append?: boolean;
 	overwrite?: boolean;
 	nextFileName?: boolean;
+	nextFilePaddedZeroes?: number;
 	autoCreatePath?: boolean;
 	jsonStringify?: boolean;
 	jsonWrapper?: string;
@@ -38,6 +39,7 @@ function WriteFileOptions() {
 	this.append = true;
 	this.overwrite = false;
 	this.nextFileName = false;
+	this.nextFilePaddedZeroes = 3;
 	this.autoCreatePath = false;
 	this.jsonParse = true;
 	this.jsonStringify = true;
@@ -551,6 +553,10 @@ function _isSizeExceeded(filepath: string, options: WriteFileOptionsType): boole
 	return false;
 }
 
+function _createNextFilename(options: WriteFileOptionsType, words: string, count: number, ext: string): string {
+	return words + utils.getPaddedZeroes(count, options.nextFilePaddedZeroes) + '.' + ext;
+}
+
 function _getNextFileName(
 	file: string,
 	fileMap: any,
@@ -560,9 +566,9 @@ function _getNextFileName(
 	const [base, ext] = utils.splitInReverseByCondition(file, (i: string) => i === '.');
 	// console.log(base, ext);
 	const [words, numbers] = utils.splitInReverseByCondition(base, (i: string) => isNaN(Number(i)), true);
-	let nextFileName = file;
-	let prevFileName = file;
 	let count: number = utils.tryParseNumber(numbers, 0);
+	let nextFileName = _createNextFilename(options, words, count, ext);
+	let prevFileName = nextFileName;
 	const predicate = (nextFileName: string): boolean => {
 		if (options.checkFileSize) {
 			return fileMap[nextFileName] && _isSizeExceeded(dir + nextFileName, options);
@@ -572,7 +578,7 @@ function _getNextFileName(
 	while (predicate(nextFileName)) {
 		count++;
 		prevFileName = nextFileName;
-		nextFileName = words + count + '.' + ext;
+		nextFileName = _createNextFilename(options, words, count, ext);
 	}
 	return { nextFileName, prevFileName };
 }

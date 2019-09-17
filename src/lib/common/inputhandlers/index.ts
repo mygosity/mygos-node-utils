@@ -2,7 +2,10 @@ import * as dateUtils from '../../date';
 import prettier, { BuiltInParserName } from 'prettier';
 import * as validator from '../validation';
 
-export function tryParseNumber(input: string, defaultValue: any = null): any {
+export function tryParseNumber(input: any, defaultValue: any = null): any {
+	if (typeof input === 'number') {
+		return input;
+	}
 	if (validator.invalidNumber(input)) {
 		return defaultValue;
 	}

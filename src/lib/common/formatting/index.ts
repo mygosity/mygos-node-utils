@@ -76,3 +76,12 @@ export function normalizeNumber(number: string, numberLength: number): string {
 	}
 	return onlyNums.slice(0, numberLength);
 }
+
+export function getPaddedZeroes(input: number | string, maxPadLength: number = 0) {
+	let answer = input.toString(),
+		capturedLength = answer.length;
+	for (let i = 0; i < maxPadLength - capturedLength; ++i) {
+		answer = 0 + answer;
+	}
+	return answer;
+}
