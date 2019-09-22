@@ -20,3 +20,18 @@ export function round(input: number, decimals: number = 0): number {
 export function autoWrap(value: number, maxLen: number): number {
 	return (maxLen + value) % maxLen;
 }
+
+export function roundToDecimalPlaces(
+	input: number,
+	dp: number,
+	roundingFunction: (input: number) => number = Math.round,
+) {
+	input *= Math.pow(10, dp);
+	input = roundingFunction(input);
+	input /= Math.pow(10, dp);
+	return input;
+}
+
+export function approximates(a: number, b: number, proximity: number = 0): boolean {
+	return Math.abs(a - b) >= proximity;
+}
