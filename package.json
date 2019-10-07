@@ -1,41 +1,52 @@
 {
-  "name": "mygos-node-utils",
-  "version": "1.0.0",
-  "description": "Mygos personal utilities",
-  "main": "build/index.js",
-  "scripts": {
-    "start": "babel-node build/index.js",
-    "tsc": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mygosity/mygos-node-utils.git"
-  },
-  "author": "mygosity",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mygosity/mygos-node-utils/issues"
-  },
-  "homepage": "https://github.com/mygosity/mygos-node-utils#readme",
-  "dependencies": {
-    "eventcontrol": "^1.1.3",
-    "moment-timezone": "^0.5.26",
-    "websocket": "^1.0.29",
-    "ws": "^7.1.2"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.5.5",
-    "@babel/node": "^7.5.5",
-    "@babel/plugin-proposal-class-properties": "^7.5.5",
-    "@babel/preset-env": "^7.5.5",
-    "@types/node": "^12.7.2",
-    "babel-eslint": "^10.0.2",
-    "babel-plugin-module-resolver": "^3.2.0",
-    "babel-root-slash-import": "^1.1.0",
-    "eslint": "^6.1.0",
-    "eslint-config-prettier": "^6.0.0",
-    "eslint-plugin-prettier": "^3.1.0",
-    "prettier": "^1.18.2"
-  }
+	"name": "mygos-node-utils",
+	"version": "1.0.0",
+	"description": "Mygos personal utilities",
+	"main": "build/index.js",
+	"scripts": {
+		"dev": "node_modules/.bin/tsc-watch --onSuccess \"babel-node build/index.js\"",
+		"start": "nodemon -e ts --exec \"npm run dev\"",
+		"tsc": "tsc",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"nodemonConfig": {
+		"ignore": [
+			"logging/",
+			"errorlogs/",
+			"evalCode/",
+			"src/"
+		]
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mygosity/mygos-node-utils.git"
+	},
+	"author": "mygosity",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/mygosity/mygos-node-utils/issues"
+	},
+	"homepage": "https://github.com/mygosity/mygos-node-utils#readme",
+	"dependencies": {
+		"eventcontrol": "^1.1.3",
+		"moment-timezone": "^0.5.26",
+		"websocket": "^1.0.29",
+		"ws": "^7.1.2"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.5.5",
+		"@babel/node": "^7.5.5",
+		"@babel/plugin-proposal-class-properties": "^7.5.5",
+		"@babel/preset-env": "^7.5.5",
+		"@types/node": "^12.7.2",
+		"babel-eslint": "^10.0.2",
+		"babel-plugin-module-resolver": "^3.2.0",
+		"babel-root-slash-import": "^1.1.0",
+		"eslint": "^6.1.0",
+		"eslint-config-prettier": "^6.0.0",
+		"eslint-plugin-prettier": "^3.1.0",
+		"prettier": "^1.18.2",
+		"tsc-watch": "^4.0.0",
+		"typescript": "^3.6.3"
+	}
 }
