@@ -59,7 +59,7 @@ function ReadFileOptions() {
 const defaultReadFileOptions = new ReadFileOptions();
 const logSignature = 'fileHelper=>';
 
-class FileHelper {
+export class FileHelper {
 	logSignature: string;
 
 	constructor() {

@@ -2,6 +2,9 @@ import logger from '../logger';
 import * as consoleHelper from './helper';
 import { Dictionary } from '../typedefinitions';
 
+import rl from 'readline';
+const readline = rl.createInterface({ input: process.stdin, output: process.stdout });
+
 let _instance = null;
 
 export default class CommandLine {
@@ -45,12 +48,12 @@ export default class CommandLine {
 		}
 	};
 
-	commandHandler = (input: string) => {
+	commandHandler = async (input: string) => {
 		try {
 			logger.report(this, `commandLine=> commandHandler:: handling input: ${input}`);
 			if (
 				this.commandInterceptor == null ||
-				(this.commandInterceptor !== undefined && this.commandInterceptor(input) == null)
+				(this.commandInterceptor !== undefined && (await this.commandInterceptor(input)) == null)
 			) {
 				const spaceIndex = input.indexOf(' ');
 				const inputFirstParam = spaceIndex !== -1 ? input.substring(0, spaceIndex) : input;
@@ -75,7 +78,7 @@ export default class CommandLine {
 				input,
 			});
 		}
-		consoleHelper.readline.prompt();
+		readline.prompt();
 	};
 
 	startListeningForCommands = async (): Promise<string> => {
@@ -86,8 +89,8 @@ export default class CommandLine {
 			}
 			this.config.readingCommands = true;
 			logger.report(this, 'startListeningForCommands:: is now reading commands');
-			consoleHelper.readline.on('line', this._proxyHandler);
-			consoleHelper.readline.prompt();
+			readline.on('line', this._proxyHandler);
+			readline.prompt();
 		} catch (error) {
 			logger.error(this, error, {
 				funcName: 'startListeningForCommands',
@@ -98,11 +101,11 @@ export default class CommandLine {
 	};
 
 	stopListeningForCommands = () => {
-		consoleHelper.readline.removeListener('line', this.commandHandler);
+		readline.removeListener('line', this.commandHandler);
 		this.config.readingCommands = false;
 	};
 
-	_proxyHandler = (input) => {
+	_proxyHandler = (input: string) => {
 		if (this.testing) {
 			this._testHandler(input);
 		} else {

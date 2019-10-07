@@ -33,7 +33,7 @@ interface ConfigurableLogServiceOptions {
 	prettyFormat?: boolean;
 }
 
-class LogService {
+export class LogService {
 	logSignature: string = logSignature;
 	errorPath: string = 'logging/';
 	loggingPath: string = 'logging/';
@@ -155,7 +155,7 @@ class LogService {
 			this.report(src, { funcSignature: 'error' }, { func: `LogService=>error::` });
 			this.writeCustomJson(
 				`errors`,
-				{ src, errorMsg: error.toString(), data: args, error },
+				{ logSignature: src.logSignature, errorMsg: error.toString(), data: args, error },
 				{
 					path: `${this.errorPath}logger/${dateUtils.getAusTimestamp(Date.now(), 'YYYY-MM-DD')}`,
 				},

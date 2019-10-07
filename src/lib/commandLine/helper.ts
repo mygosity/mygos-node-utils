@@ -1,9 +1,6 @@
 import logger from '../logger';
 import utils from '../common';
 import { Dictionary } from '../typedefinitions';
-import rl from 'readline';
-
-export const readline = rl.createInterface({ input: process.stdin, output: process.stdout });
 
 function stripSingleQuotes(input: string): string {
 	let first = 0,

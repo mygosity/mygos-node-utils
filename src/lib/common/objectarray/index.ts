@@ -58,13 +58,50 @@ export function arrayDifference(arr: any[], target: any): any[] {
  * @param {function} condition with which the function returns true to return the index
  * @return {number} index of the first occurrence of the condition
  */
-export function arrayIndexOf(arr: any[], condition: Function): number {
+export function arrayIndexOf(arr: any[], condition: (item: any, index: number) => boolean): number {
 	for (let i = 0; i < arr.length; ++i) {
 		if (condition(arr[i], i)) {
 			return i;
 		}
 	}
 	return -1;
+}
+
+export function removeFromListForwards(
+	list: any[],
+	condition: (item: any, index: number, list: any[]) => boolean,
+	returnOnFirstRemove: boolean = false,
+): any[] {
+	for (let i = 1; i < list.length; ++i) {
+		if (condition(list[i - 1], i - 1, list)) {
+			list.splice(i - 1, 1);
+			if (!returnOnFirstRemove) {
+				i--;
+			} else {
+				return list;
+			}
+		}
+	}
+	if (condition(list[list.length - 1], list.length - 1, list)) {
+		list.splice(list.length - 1, 1);
+	}
+	return list;
+}
+
+export function removeFromListBackwards(
+	list: any[],
+	condition: (item: any, index: number, list: any[]) => boolean,
+	returnOnFirstRemove: boolean = false,
+): any[] {
+	for (let i = list.length - 1; i >= 0; --i) {
+		if (condition(list[i], i, list)) {
+			list.splice(i, 1);
+			if (returnOnFirstRemove) {
+				return list;
+			}
+		}
+	}
+	return list;
 }
 
 export function swapArrayElement(list: any[], fromIndex: number, toIndex: number): void {

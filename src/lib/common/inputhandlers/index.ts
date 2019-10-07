@@ -119,3 +119,61 @@ export function splitInReverseByCondition(
 	}
 	return [input.substring(0, inclusive ? i + 1 : i), input.substring(i + 1)];
 }
+
+export function getStringBetweenChars(target: string, start: string, end: string): string {
+	let startIndex = -1,
+		endIndex = -1;
+	for (let i = 0; i < target.length; ++i) {
+		if (startIndex === -1) {
+			if (target[i] === start) {
+				startIndex = i;
+			}
+		} else if (endIndex === -1) {
+			if (target[i] === end) {
+				endIndex = i;
+				break;
+			}
+		}
+	}
+	if (startIndex >= 0 && endIndex >= 0) {
+		return target.substring(startIndex + 1, endIndex);
+	}
+	return '';
+}
+
+export function getStringBetweenStrings(target: string, start: string, end: string): string {
+	let startIndex = -1,
+		endIndex = -1;
+	for (let i = 0; i < target.length; ++i) {
+		if (startIndex === -1) {
+			if (target.substring(i, start.length + i) === start) {
+				startIndex = i + start.length;
+			}
+		} else if (endIndex === -1) {
+			if (target.substring(i, end.length + i) === end) {
+				endIndex = i;
+				break;
+			}
+		}
+	}
+	if (startIndex >= 0 && endIndex >= 0) {
+		return target.substring(startIndex, endIndex);
+	}
+	return '';
+}
+
+export function getFloatInsideString(target: string, defaultReturn: any = null): any {
+	let startIndex = -1;
+	for (let i = 0; i < target.length; ++i) {
+		if (startIndex === -1) {
+			if (!isNaN(Number(target[i]))) {
+				startIndex = i;
+			}
+		} else {
+			if (target[i] !== '.' && isNaN(Number(target[i]))) {
+				return parseFloat(target.substring(startIndex, i));
+			}
+		}
+	}
+	return defaultReturn;
+}
