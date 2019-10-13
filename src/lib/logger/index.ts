@@ -134,7 +134,10 @@ export class LogService {
 
 	logban = (src: LoggableType, ...args: any[]) => {
 		try {
-			this.report({ funcSignature: 'logban', ...src }, { func: `LogService=>logban::` });
+			this.report(
+				{ logSignature: this.logSignature, funcSignature: src.funcSignature },
+				{ func: `LogService=>logban::` },
+			);
 			this.writeCustomJson(`logban`, { data: args });
 		} catch (error) {
 			this.outputMethod(error);
@@ -143,7 +146,10 @@ export class LogService {
 
 	writelog = (src: LoggableType, ...args: any[]) => {
 		try {
-			this.report({ funcSignature: 'writelog', ...src }, { func: `LogService=>writelog::` });
+			this.report(
+				{ logSignature: this.logSignature, funcSignature: src.funcSignature },
+				{ func: `LogService=>writelog::` },
+			);
 			this.writeCustomJson(`logservice`, { logSignature: src.logSignature, data: args });
 		} catch (error) {
 			this.outputMethod(error);
