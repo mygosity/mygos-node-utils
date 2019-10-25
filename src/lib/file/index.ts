@@ -271,7 +271,7 @@ export class FileHelper {
 				_writeJsonFile(filepath, jsondata, o, resolve, reject);
 			} else {
 				//put together the resolve, reject arrays so it will be batched together when resolved/rejected
-				const argumentBatcher = (copiedArgs, newArgs) => {
+				const argumentBatcher = (copiedArgs: any[], newArgs: any[]) => {
 					copiedArgs[1] = copiedArgs[1].concat(newArgs[1]);
 					copiedArgs[2] = copiedArgs[2].concat(newArgs[2]);
 				};

@@ -6,10 +6,18 @@ export const emptyFunctionCall = (): void => {};
 
 export async function promiseAllObject(
 	object: Dictionary<Promise<any>>,
-	transformFunction: Function = null,
+	options: {
+		transformFunction?: (data: any) => Promise<any>;
+		errorHandler?: (key: string, error: any) => Promise<any>;
+	} = {},
 ): Promise<any> {
 	for (let key in object) {
-		object[key] = transformFunction === null ? await object[key] : transformFunction(await object[key]);
+		try {
+			object[key] =
+				options.transformFunction == null ? await object[key] : await options.transformFunction(object[key]);
+		} catch (error) {
+			object[key] = options.errorHandler == null ? null : await options.errorHandler(key, error);
+		}
 	}
 	return object;
 }

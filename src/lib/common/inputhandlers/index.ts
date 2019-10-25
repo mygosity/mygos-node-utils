@@ -177,3 +177,18 @@ export function getFloatInsideString(target: string, defaultReturn: any = null):
 	}
 	return defaultReturn;
 }
+
+export function extractErrorCode(msg: string) {
+	const matchCodePattern = /code[\s|\-]*[\d]*/g;
+	let codes = msg.match(matchCodePattern);
+	for (let i = 0; i < codes.length; ++i) {
+		const s = codes[i].split('code');
+		if (s[1] != null) {
+			const code = parseInt(s[1]);
+			if (!isNaN(code)) {
+				return code;
+			}
+		}
+	}
+	return -1;
+}

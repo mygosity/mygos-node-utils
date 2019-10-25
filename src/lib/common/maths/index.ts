@@ -33,5 +33,5 @@ export function roundToDecimalPlaces(
 }
 
 export function approximates(a: number, b: number, proximity: number = 0): boolean {
-	return Math.abs(a - b) >= proximity;
+	return Math.abs(Math.abs(a) - Math.abs(b)) <= proximity;
 }
