@@ -25,9 +25,10 @@ export function roundToDecimalPlaces(
 	input: number,
 	dp: number,
 	roundingFunction: (input: number) => number = Math.round,
+	epsilon: number = 0,
 ) {
 	input *= Math.pow(10, dp);
-	input = roundingFunction(input);
+	input = roundingFunction(input + epsilon);
 	input /= Math.pow(10, dp);
 	return input;
 }

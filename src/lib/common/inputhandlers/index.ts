@@ -2,6 +2,21 @@ import * as dateUtils from '../../date';
 import prettier, { BuiltInParserName } from 'prettier';
 import * as validator from '../validation';
 
+export function tryParseInteger(input: any, defaultValue: any = null): any {
+	if (typeof input === 'number') {
+		return input;
+	}
+	if (validator.invalidNumber(input)) {
+		return defaultValue;
+	}
+	try {
+		if (input.indexOf('.') === -1) {
+			return parseInt(input);
+		}
+	} catch (error) {}
+	return defaultValue;
+}
+
 export function tryParseNumber(input: any, defaultValue: any = null): any {
 	if (typeof input === 'number') {
 		return input;
@@ -179,8 +194,10 @@ export function getFloatInsideString(target: string, defaultReturn: any = null):
 }
 
 export function extractErrorCode(msg: string) {
+	if (msg == null) return -1;
 	const matchCodePattern = /code[\s|\-]*[\d]*/g;
 	let codes = msg.match(matchCodePattern);
+	if (codes == null) return -1;
 	for (let i = 0; i < codes.length; ++i) {
 		const s = codes[i].split('code');
 		if (s[1] != null) {
