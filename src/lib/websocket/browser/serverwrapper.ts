@@ -1,8 +1,9 @@
-import { connection, request, IMessage } from 'websocket';
+// import { connection, request, IMessage } from 'websocket';
 import WebSocketServer, { ConnectionMap } from '../node/server';
+import WebSocket from 'ws';
 
 let ws: WebSocketServer,
-	connections: { [identity: string]: connection } = {};
+	connections: { [identity: string]: WebSocket } = {};
 
 interface OriginSignature {
 	event: string;
@@ -15,7 +16,7 @@ interface OriginSignature {
  */
 class WebsocketWrapper {
 	logSignature: string;
-	dataHandler: { origin: (connection: connection, data: OriginSignature) => void };
+	dataHandler: { origin: (connection: WebSocket, data: OriginSignature) => void };
 
 	constructor() {
 		this.logSignature = 'WebsocketWrapper';
@@ -31,7 +32,7 @@ class WebsocketWrapper {
 		ws.init();
 	};
 
-	registerConnection = (connection: connection, data: OriginSignature) => {
+	registerConnection = (connection: WebSocket, data: OriginSignature) => {
 		console.log({
 			msg: 'registerConnection::',
 			data,
@@ -39,7 +40,7 @@ class WebsocketWrapper {
 		connections[data.identity] = connection;
 	};
 
-	onData = (connection: connection, msg: string) => {
+	onData = (connection: WebSocket, msg: string) => {
 		if (msg === 'ping') {
 			connection.send('pong');
 		} else {

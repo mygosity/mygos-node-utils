@@ -166,7 +166,7 @@ export default class WebSocketClient {
 		};
 
 		this.connection.onerror = (error: WebSocket.ErrorEvent): void => {
-			logger.report(this, 'onerror:: error:');
+			logger.report(this, 'onerror:: error:', error.toString(), error.message);
 			// logger.report(this, 'onerror:: error:', event);
 			this.startRetrying();
 			if (this.onerror !== undefined) {
