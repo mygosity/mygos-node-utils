@@ -5,23 +5,9 @@ import utils from '../../common';
 import WebSocket, { Server as WebSocketServer } from 'ws';
 import http, { IncomingMessage, ServerResponse, STATUS_CODES } from 'http';
 import https, { ServerOptions } from 'https';
-import * as net from 'net';
+// import * as net from 'net';
 
 export const logSignature = 'WebSocketServer=>';
-
-const CLOSE_REASON_NORMAL = 1000;
-const CLOSE_REASON_GOING_AWAY = 1001;
-const CLOSE_REASON_PROTOCOL_ERROR = 1002;
-const CLOSE_REASON_UNPROCESSABLE_INPUT = 1003;
-const CLOSE_REASON_RESERVED = 1004; // Reserved value.  Undefined meaning.
-const CLOSE_REASON_NOT_PROVIDED = 1005; // Not to be used on the wire
-const CLOSE_REASON_ABNORMAL = 1006; // Not to be used on the wire
-const CLOSE_REASON_INVALID_DATA = 1007;
-const CLOSE_REASON_POLICY_VIOLATION = 1008;
-const CLOSE_REASON_MESSAGE_TOO_BIG = 1009;
-const CLOSE_REASON_EXTENSION_REQUIRED = 1010;
-const CLOSE_REASON_INTERNAL_SERVER_ERROR = 1011;
-const CLOSE_REASON_TLS_HANDSHAKE_FAILED = 1015; // Not to be used on the wire
 
 export interface ConnectionMap {
 	[remoteAddress: string]: {
