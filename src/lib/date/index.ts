@@ -2,7 +2,10 @@ import moment from 'moment-timezone';
 import utils from '../common';
 import { AcceptableDateFormat } from '../typedefinitions';
 
-export const getDateFormat = (date: AcceptableDateFormat, formatStr: string = 'YYYY-MM-DD'): moment => {
+export const getDateFormat = (
+	date: AcceptableDateFormat,
+	formatStr: string = 'YYYY-MM-DD',
+): string => {
 	return moment(date).format(formatStr);
 };
 
@@ -10,13 +13,20 @@ export const msDifference = (timestamp: number): number => {
 	return Date.now() - timestamp;
 };
 
-export const timeDifference = (from: number, to: AcceptableDateFormat, type: string = 'days'): moment => {
+export const timeDifference = (
+	from: number,
+	to: AcceptableDateFormat,
+	type: moment.unitOfTime.Diff = 'days',
+): number => {
 	const fromTime = moment(from);
 	const toTime = to ? moment(to) : moment();
 	return fromTime.diff(toTime, type);
 };
 
-export const getAusTimestamp = (date: AcceptableDateFormat, formatStr: string = 'YYYY-MM-DD HH:mm:ss.SSS'): string => {
+export const getAusTimestamp = (
+	date: AcceptableDateFormat,
+	formatStr: string = 'YYYY-MM-DD HH:mm:ss.SSS',
+): string => {
 	return date
 		? moment(date)
 				.tz('Australia/Sydney')
