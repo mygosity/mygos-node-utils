@@ -18,7 +18,7 @@ export function round(input: number, decimals: number = 0): number {
 }
 
 export function autoWrap(value: number, maxLen: number): number {
-	return (maxLen + value) % maxLen;
+	return value >= 0 ? value % maxLen : ((value % maxLen) + maxLen) % maxLen;
 }
 
 export function roundToDecimalPlaces(
