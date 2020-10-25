@@ -30,23 +30,23 @@
 	"dependencies": {
 		"eventcontrol": "^1.1.3",
 		"moment-timezone": "^0.5.31",
-		"websocket": "^1.0.31",
-		"ws": "^7.3.0"
+		"websocket": "^1.0.32",
+		"ws": "^7.3.1"
 	},
 	"devDependencies": {
-		"@babel/core": "^7.10.4",
-		"@babel/node": "^7.10.4",
-		"@babel/plugin-proposal-class-properties": "^7.10.4",
-		"@babel/preset-env": "^7.10.4",
-		"@types/node": "^12.12.47",
+		"@babel/core": "^7.12.3",
+		"@babel/node": "^7.12.1",
+		"@babel/plugin-proposal-class-properties": "^7.12.1",
+		"@babel/preset-env": "^7.12.1",
+		"@types/node": "^12.19.1",
 		"babel-eslint": "^10.1.0",
 		"babel-plugin-module-resolver": "^3.2.0",
 		"babel-root-slash-import": "^1.1.0",
 		"eslint": "^6.8.0",
-		"eslint-config-prettier": "^6.11.0",
+		"eslint-config-prettier": "^6.14.0",
 		"eslint-plugin-prettier": "^3.1.4",
 		"prettier": "^1.19.1",
 		"tsc-watch": "^4.2.9",
-		"typescript": "^3.9.6"
+		"typescript": "^3.9.7"
 	}
 }
