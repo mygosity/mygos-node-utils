@@ -5,7 +5,10 @@ function handleNasaApi() {
 	webClient
 		.get(url)
 		.then((response) => {
-			console.log(response.data);
+			console.log({
+				status: response.statusCode,
+				data: response.data,
+			});
 		})
 		.catch((e) => {
 			console.log(e);
@@ -17,7 +20,10 @@ function handleHttpRedirect() {
 	webClient
 		.get(url, {}, { parseJsonResponse: false })
 		.then((response) => {
-			console.log(response.data);
+			console.log({
+				status: response.statusCode,
+				data: response.data,
+			});
 		})
 		.catch((e) => {
 			console.log(e);
@@ -29,14 +35,17 @@ function testGetter() {
 	webClient
 		.get(url, {}, { parseJsonResponse: false })
 		.then((response) => {
-			console.log(response.data);
+			console.log({
+				status: response.statusCode,
+				data: response.data,
+			});
 		})
 		.catch((e) => {
 			console.log(e);
 		});
 }
 
-function testPoster() {
+function testPost() {
 	const url = 'http://localhost:57333/log';
 	webClient
 		.post(
@@ -48,7 +57,10 @@ function testPoster() {
 			{ parseJsonResponse: true },
 		)
 		.then((response) => {
-			console.log(response.data);
+			console.log({
+				status: response.statusCode,
+				data: response.data,
+			});
 		})
 		.catch((e) => {
 			console.log(e);
@@ -56,6 +68,6 @@ function testPoster() {
 }
 
 function main() {
-	testPoster();
+	testPost();
 }
 main();
