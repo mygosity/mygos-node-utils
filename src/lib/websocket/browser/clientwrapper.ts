@@ -1,4 +1,4 @@
-import eventcontrol from 'eventcontrol';
+import { eventcontrol } from 'eventcontrol';
 
 import WebsocketClient from './client';
 

@@ -1,9 +1,9 @@
-import logger from '../logger';
-import { getHumanReadableTime, prefillDefaultOptions } from '../common';
-import utils from '../common';
-import fileManager from '../file/manager';
 import fs, { Stats } from 'fs';
 import mkdirp from 'mkdirp';
+import { getHumanReadableTime, prefillDefaultOptions } from '../common';
+import utils from '../common';
+import logger from '../logger';
+import fileManager from '../file/manager';
 
 export interface ReadFileOptionsType {
 	relativePath?: boolean;

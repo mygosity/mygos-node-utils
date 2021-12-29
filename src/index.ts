@@ -3,7 +3,7 @@
  * REPLACE AND DO WHAT YOU WANT WITH IT
  */
 export const paths = {
-	root: require('path').resolve(__dirname, './'),
+	root: require('path').resolve(__dirname, '../'),
 	logging: 'logging/',
 	error: 'errorlogs/',
 };

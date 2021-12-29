@@ -4,6 +4,13 @@ const fileHelper: FileHelper = require('./lib/file').default;
 const rl = require('readline');
 const readline = rl.createInterface({ input: process.stdin, output: process.stdout });
 
+import { eventcontrol } from 'eventcontrol';
+
+const globalContext = {
+	eventcontrol,
+	fileHelper,
+};
+
 /***************************************************************
  * Command Class to hold all refs required or redirect requests
  ***************************************************************/
@@ -24,7 +31,7 @@ let inputHandler = async (input: string) => {
 	try {
 		if (input === '') {
 			console.log('hot reloading default file');
-			const { data, success } = await fileHelper.safeReadFileSync('evalCode/code.js', {
+			const { data, success } = await fileHelper.safeReadFileSync('/evalCode/code.js', {
 				jsonParse: false,
 			});
 			if (success) {
