@@ -17,11 +17,18 @@ export class FileManager {
 	 * @param {string} filepath
 	 * @param {any} data
 	 * @param {array} arguments
-	 * @param {string} writeCallback
+	 * @param {function} writeCallback
 	 * @param {boolean} writeImmediately use false to write a batch of data together (use only with the same callback/options)
-	 * @param {object} argResolver an object that contains methods to handle the batching of arguments
+	 * @param {object} argResolver an object that contains methods to handle the accumulation of arguments batched together
 	 */
-	queue = (filepath, data, args, writeCallback, writeImmediately = true, argResolver = undefined) => {
+	queue = (
+		filepath: string,
+		data: any,
+		args: any[],
+		writeCallback: (filepath: string, copiedData: any, ...copiedArgs: any[]) => void,
+		writeImmediately: boolean = true,
+		argResolver: (currentArgs: any[], newlyAddedArgs: any[]) => void = undefined,
+	) => {
 		logger.report(this, 'queue::', filepath);
 		if (writequeue[filepath] == null) {
 			writequeue[filepath] = [];
@@ -42,7 +49,7 @@ export class FileManager {
 	 */
 	releaseQueue(filepath: string) {
 		let copiedData: string = '',
-			writeCallback: Function,
+			writeCallback: (filepath: string, copiedData: any, ...copiedArgs: any[]) => void,
 			copiedArgs: any[],
 			allNull: boolean = true;
 
@@ -104,7 +111,7 @@ export class FileManager {
 		return true;
 	};
 
-	release = (filepath: string): void => {
+	release = (filepath: string) => {
 		filelocks[filepath] = false;
 		logger.report(this, 'release:: released file lock path :', filepath);
 		if (writequeue[filepath] !== undefined && writequeue[filepath].length) {
@@ -115,7 +122,7 @@ export class FileManager {
 	/**
 	 * Debug functions listed below
 	 */
-	__logStatus = (): void => {
+	__logStatus = () => {
 		console.log('logStatus:: filelocks');
 		for (let i in filelocks) {
 			console.log('filelocks:' + i, filelocks[i]);
@@ -127,7 +134,7 @@ export class FileManager {
 		}
 	};
 
-	__status = (): void => {
+	__status = () => {
 		this.__logStatus();
 		logger.writelog(this, { src: this, filelocks, writequeue });
 	};
