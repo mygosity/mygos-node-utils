@@ -1,13 +1,14 @@
 {
-  "compilerOptions": {
-    "target": "esnext",
-    "moduleResolution": "node", //enables checking of import logic (goto definition)
-    "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
-    "paths": {
-      "/*": ["*"]
-    }
-  },
-  "include": ["src/**/*", "build/**/*"],
-  "exclude": ["node_modules"]
+	"compilerOptions": {
+		"target": "esnext",
+		"moduleResolution": "node", //enables checking of import logic (goto definition)
+		"allowSyntheticDefaultImports": true,
+		"resolveJsonModule": true,
+		"baseUrl": ".",
+		"paths": {
+			"/*": ["*"]
+		}
+	},
+	"include": ["src/**/*", "build/**/*"],
+	"exclude": ["node_modules"]
 }
