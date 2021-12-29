@@ -1,9 +1,8 @@
-const util = require('util');
+import util from 'util';
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.depth = null;
 import fileHelper, { WriteFileOptionsType } from '../file';
 import * as dateUtils from '../date';
-import utils from '../common';
 
 export const logSignature = 'LogService=>';
 
@@ -163,7 +162,10 @@ export class LogService {
 				`errors`,
 				{ logSignature: src.logSignature, errorMsg: error.toString(), data: args, error },
 				{
-					path: `${this.errorPath}logger/${dateUtils.getAusTimestamp(Date.now(), 'YYYY-MM-DD')}`,
+					path: `${this.errorPath}logger/${dateUtils.getAusTimestamp(
+						Date.now(),
+						'YYYY-MM-DD',
+					)}`,
 				},
 			);
 		} catch (error) {

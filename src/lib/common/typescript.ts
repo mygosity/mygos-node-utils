@@ -41,7 +41,9 @@ function shouldSurroundWithQuotes(type: string): boolean {
 }
 
 function printObjectKey(type: string, optionalTypeDecorator: string) {
-	return shouldSurroundWithQuotes(type) ? `'${type}${optionalTypeDecorator}': ` : `${type}${optionalTypeDecorator}: `;
+	return shouldSurroundWithQuotes(type)
+		? `'${type}${optionalTypeDecorator}': `
+		: `${type}${optionalTypeDecorator}: `;
 }
 
 function printArrBracketsForEachDepth(depth: number): string {
@@ -169,7 +171,13 @@ function parsedDataType(type: string, data: any, optionalData: any, depth: numbe
 		} else if (Array.isArray(data)) {
 			answer += parsedArrayType(type, data, optionalData, depth + 1);
 		} else if (isObject(data)) {
-			const [first, last] = parsedObjectType(type, fromParsedArrayType, data, optionalData, depth);
+			const [first, last] = parsedObjectType(
+				type,
+				fromParsedArrayType,
+				data,
+				optionalData,
+				depth,
+			);
 			answer += first;
 			ending += last;
 		}
@@ -240,7 +248,8 @@ export function convertToTypeDefinition(
 	}
 
 	const shouldCreateInterface =
-		(options.maxAutoInnerInterfaceDepth === -1 || options.maxAutoInnerInterfaceDepth >= recursionDepth) &&
+		(options.maxAutoInnerInterfaceDepth === -1 ||
+			options.maxAutoInnerInterfaceDepth >= recursionDepth) &&
 		options.autoInnerInterface;
 
 	const queuedInterfaces: Dictionary<any> = shouldCreateInterface ? {} : null;
@@ -263,9 +272,15 @@ export function convertToTypeDefinition(
 			}
 		}
 	}
-	answer = !fromArray ? answer + RIGHT_BRACE + SEMICOLON + ENDLINE + ENDLINE : answer + SEMICOLON + ENDLINE + ENDLINE;
+	answer = !fromArray
+		? answer + RIGHT_BRACE + SEMICOLON + ENDLINE + ENDLINE
+		: answer + SEMICOLON + ENDLINE + ENDLINE;
 	if (parseOptions.queuedInterfaces !== null) {
-		answer += recursivelyHandleQueuedInterfaces(parseOptions.queuedInterfaces, options, recursionDepth + 1);
+		answer += recursivelyHandleQueuedInterfaces(
+			parseOptions.queuedInterfaces,
+			options,
+			recursionDepth + 1,
+		);
 	}
 	return answer;
 }

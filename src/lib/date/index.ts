@@ -28,15 +28,14 @@ export const getAusTimestamp = (
 	formatStr: string = 'YYYY-MM-DD HH:mm:ss.SSS',
 ): string => {
 	return date
-		? moment(date)
-				.tz('Australia/Sydney')
-				.format(formatStr)
-		: moment()
-				.tz('Australia/Sydney')
-				.format(formatStr);
+		? moment(date).tz('Australia/Sydney').format(formatStr)
+		: moment().tz('Australia/Sydney').format(formatStr);
 };
 
-export const wrapWithAusTimeStamp = (obj: any, key?: string): any => {
+export const wrapWithAusTimeStamp = (
+	obj: any,
+	key?: string,
+): { timestamp: string; aussieTime: string; [key: string]: any } => {
 	if (!utils.isObject(obj)) {
 		if (Array.isArray(obj)) {
 			obj = key !== undefined ? { [key]: [...obj] } : { data: [...obj] };

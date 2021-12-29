@@ -1,5 +1,4 @@
-// import { connection, request, IMessage } from 'websocket';
-import WebSocketServer, { ConnectionMap } from '../node/server';
+import WebSocketServer from '../node/server';
 import WebSocket from 'ws';
 
 let ws: WebSocketServer,

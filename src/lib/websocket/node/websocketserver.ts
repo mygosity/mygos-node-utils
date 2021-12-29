@@ -1,8 +1,8 @@
 import logger from '../../logger';
 import fileHelper from '../../file';
-import * as dateUtils from '../../date';
 import utils from '../../common';
-import { server as WebSocketServer, connection, request, IMessage } from 'websocket';
+import * as dateUtils from '../../date';
+import { server as WebSocketServer, connection, request, Message } from 'websocket';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import https, { ServerOptions } from 'https';
 
@@ -33,7 +33,12 @@ export interface WebsocketServerOptionsType {
 	originPredicate?: (origin: string, request: request) => boolean;
 	onAuthRejectHandler?: (request: request) => void;
 	onconnectAccepted?: (connection: connection, request: request) => void;
-	onclose?: (connection: connection, request: request, reasonCode: number, description: string) => void;
+	onclose?: (
+		connection: connection,
+		request: request,
+		reasonCode: number,
+		description: string,
+	) => void;
 	onerror?: (connection: connection, error: Error) => void;
 	onping?: () => void;
 	onpong?: () => void;
@@ -91,7 +96,12 @@ export default class WebSocketServerWrapper {
 	acceptProtocol: string;
 	originPredicate: (origin: string, request: request) => boolean;
 	onconnectAccepted: (connection: connection, request: request) => void;
-	onclose: (connection: connection, request: request, reasonCode: number, description: string) => void;
+	onclose: (
+		connection: connection,
+		request: request,
+		reasonCode: number,
+		description: string,
+	) => void;
 	onerror: (connection: connection, error: Error) => void;
 	onping?: () => void;
 	onpong?: () => void;
@@ -136,7 +146,10 @@ export default class WebSocketServerWrapper {
 	}
 
 	loadSinBin = (): void => {
-		const [dir] = utils.splitInReverseByCondition(this.sinbinFilepath, (i: string) => i === '/' || i === '\\');
+		const [dir] = utils.splitInReverseByCondition(
+			this.sinbinFilepath,
+			(i: string) => i === '/' || i === '\\',
+		);
 		fileHelper.assertDirExists(dir);
 		try {
 			if (fileHelper.fileExists(this.sinbinFilepath)) {
@@ -244,11 +257,13 @@ export default class WebSocketServerWrapper {
 				this,
 				dateUtils.wrapWithAusTimeStamp({
 					src: `wsServer.on('request')`,
-					msg: 'Connection accepted | connection.remoteAddress: ' + connection.remoteAddress,
+					msg:
+						'Connection accepted | connection.remoteAddress: ' +
+						connection.remoteAddress,
 				}),
 			);
 
-			connection.on('message', (message: IMessage): void => {
+			connection.on('message', (message: Message): void => {
 				const type = message.type;
 				if (this.msgHandlers[type] !== undefined) {
 					this.msgHandlers[type](connection, message[type + 'Data']);

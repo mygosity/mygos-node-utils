@@ -24,7 +24,9 @@ const shouldSurroundWithQuotes = (type: string): boolean => {
 };
 
 const printObjectKey = (type: string, optionalTypeDecorator: string) =>
-	shouldSurroundWithQuotes(type) ? `'${type}${optionalTypeDecorator}': ` : `${type}${optionalTypeDecorator}: `;
+	shouldSurroundWithQuotes(type)
+		? `'${type}${optionalTypeDecorator}': `
+		: `${type}${optionalTypeDecorator}: `;
 
 const printArrBracketsForEachDepth = (depth: number): string => {
 	let a = EMPTY_STRING;
@@ -151,7 +153,10 @@ export const prettifyCommentBlock = (input: string[]): string => {
 };
 
 export const convertToTypeDefinition = (interfaceName: string, data: any, options = {}): string => {
-	const { excludeTypes, headerBlockComment } = utils.prefillDefaultOptions(options, defaultConvertToTypeOptions);
+	const { excludeTypes, headerBlockComment } = utils.prefillDefaultOptions(
+		options,
+		defaultConvertToTypeOptions,
+	);
 	let answer = headerBlockComment;
 	answer += `export interface ${interfaceName} ${LEFT_BRACE}${ENDLINE}`;
 	let exclusions = {};

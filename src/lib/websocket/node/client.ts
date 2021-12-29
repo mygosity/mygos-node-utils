@@ -3,7 +3,7 @@ import logger from '../../logger';
 import utils from '../../common';
 
 export interface ListenersOptionType {
-	onopen?: (connection: WebSocket, event: WebSocket.OpenEvent) => void;
+	onopen?: (connection: WebSocket, event: WebSocket.Event) => void;
 	onerror?: (connection: WebSocket, error: WebSocket.ErrorEvent) => void;
 	onclose?: (connection: WebSocket, event: WebSocket.CloseEvent) => void;
 	onping?: (connection: WebSocket, data: Buffer) => void;
@@ -66,7 +66,7 @@ export default class WebSocketClient {
 	lastKeepAliveTime: number;
 
 	onmessage: (connection: WebSocket, message: WebSocket.MessageEvent) => void;
-	onopen?: (connection: WebSocket, event: WebSocket.OpenEvent) => void;
+	onopen?: (connection: WebSocket, event: WebSocket.Event) => void;
 	onerror?: (connection: WebSocket, error: WebSocket.ErrorEvent) => void;
 	onclose?: (connection: WebSocket, event: WebSocket.CloseEvent) => void;
 	onping?: (connection: WebSocket, data: Buffer) => void;
@@ -148,12 +148,14 @@ export default class WebSocketClient {
 			return;
 		}
 		this.connection =
-			this.socketargs !== undefined ? new WebSocket(this.url, this.socketargs) : new WebSocket(this.url);
+			this.socketargs !== undefined
+				? new WebSocket(this.url, this.socketargs)
+				: new WebSocket(this.url);
 		this.prevEventTime = Date.now();
 
 		this.connection.on('pong', this.onPong);
 
-		this.connection.onopen = (event: WebSocket.OpenEvent): void => {
+		this.connection.onopen = (event: WebSocket.Event): void => {
 			logger.report(this, 'onopen::');
 			this.resetIntervals();
 			this.retryCount = 0;
@@ -212,7 +214,10 @@ export default class WebSocketClient {
 		} else if (msSinceLastUpdate > this.minTimeSinceLastUpdate) {
 			this.handleKeepAlive();
 		}
-		if (this.lastKeepAliveTime == null || currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime) {
+		if (
+			this.lastKeepAliveTime == null ||
+			currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime
+		) {
 			this.handleKeepAlive();
 		}
 	};
@@ -243,7 +248,10 @@ export default class WebSocketClient {
 
 	startServer = (): void => {
 		if (this.retryLimit < 0 || this.retryCount < this.retryLimit) {
-			logger.report(this, 'startRetrying:: this.retryCount < this.retryLimit: || this.retryLimit < 0');
+			logger.report(
+				this,
+				'startRetrying:: this.retryCount < this.retryLimit: || this.retryLimit < 0',
+			);
 			this.loadWebsocketConnections();
 		} else {
 			clearInterval(this.retryLoop);

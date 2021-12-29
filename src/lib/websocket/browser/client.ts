@@ -126,7 +126,9 @@ export default class WebSocketClient {
 
 	loadWebsocketConnections = (): void => {
 		this.connection =
-			this.socketargs !== undefined ? new WebSocket(this.url, this.socketargs) : new WebSocket(this.url);
+			this.socketargs !== undefined
+				? new WebSocket(this.url, this.socketargs)
+				: new WebSocket(this.url);
 		this.prevEventTime = Date.now();
 
 		this.connection.onopen = (event: Event): void => {
@@ -189,7 +191,10 @@ export default class WebSocketClient {
 		} else if (msSinceLastUpdate > this.minTimeSinceLastUpdate) {
 			this.handleKeepAlive();
 		}
-		if (this.lastKeepAliveTime == null || currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime) {
+		if (
+			this.lastKeepAliveTime == null ||
+			currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime
+		) {
 			this.handleKeepAlive();
 		}
 	};

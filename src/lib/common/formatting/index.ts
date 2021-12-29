@@ -17,7 +17,8 @@ export function priceFormatter(amount: number, numDecimals: number = 2): string 
 	const decimalModifier = numDecimals > 0 ? numDecimals + 1 : 0;
 	let currentlength = amountString.length - 3 - decimalModifier;
 	while (currentlength > 0) {
-		amountString = amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
+		amountString =
+			amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
 		currentlength -= 3;
 	}
 	return '$' + amountString;
@@ -51,7 +52,10 @@ export function percentFormatter(value: number): string {
 	return `${Math.round(value * 100)}%`;
 }
 
-export function percentFormatterOptionalDecimal(value: number, maxOptionalDecimals: number = 2): string {
+export function percentFormatterOptionalDecimal(
+	value: number,
+	maxOptionalDecimals: number = 2,
+): string {
 	return optionalDecimalFormat(value * 100, maxOptionalDecimals) + '%';
 }
 
