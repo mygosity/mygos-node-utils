@@ -5,10 +5,12 @@ const rl = require('readline');
 const readline = rl.createInterface({ input: process.stdin, output: process.stdout });
 
 import { eventcontrol } from 'eventcontrol';
+import { webClient } from './lib/network/client';
 
 const globalContext = {
 	eventcontrol,
 	fileHelper,
+	webClient,
 };
 
 /***************************************************************
