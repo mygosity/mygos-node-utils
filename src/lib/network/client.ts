@@ -1,5 +1,6 @@
 import http from 'http';
 import https from 'https';
+import { getParametizedUrl } from '../common';
 import { safeJsonParse } from '../common/inputhandlers';
 
 export class WebClient {
@@ -118,11 +119,17 @@ export class WebClient {
 	async get(
 		url: string,
 		headers: http.OutgoingHttpHeaders = {},
-		customOptions: { parseJsonResponse: boolean; maxRedirects?: number } = {
+		customOptions: {
+			parseJsonResponse: boolean;
+			maxRedirects?: number;
+			paramsObj?: { [key: string]: any };
+		} = {
 			parseJsonResponse: true,
 		},
 	): Promise<any> {
-		const optionsWithUrlParsed = new URL(url);
+		const optionsWithUrlParsed = new URL(
+			customOptions.paramsObj ? getParametizedUrl(url, customOptions.paramsObj) : url,
+		);
 		if (customOptions.parseJsonResponse) {
 			headers['Content-Type'] = 'application/json';
 		}
@@ -137,11 +144,17 @@ export class WebClient {
 		url: string,
 		data: string,
 		headers: http.OutgoingHttpHeaders = {},
-		customOptions: { parseJsonResponse: boolean; maxRedirects?: number } = {
+		customOptions: {
+			parseJsonResponse: boolean;
+			maxRedirects?: number;
+			paramsObj?: { [key: string]: any };
+		} = {
 			parseJsonResponse: true,
 		},
 	): Promise<any> {
-		const optionsWithUrlParsed = new URL(url);
+		const optionsWithUrlParsed = new URL(
+			customOptions.paramsObj ? getParametizedUrl(url, customOptions.paramsObj) : url,
+		);
 		if (customOptions.parseJsonResponse) {
 			headers['Content-Type'] = 'application/json';
 		}

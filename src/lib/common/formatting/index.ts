@@ -1,16 +1,30 @@
-import { epsilon } from '../maths';
+export function getFormattedNumber(value: number, maxOptionalDecimals: number = 2): string {
+	const copiedValue = value;
+	if (maxOptionalDecimals > 0 && copiedValue % 1 > 0) {
+		const decimals = copiedValue % 1;
+		const powerOfTen = Math.pow(10, maxOptionalDecimals);
+		const adjustedValue = Math.round(decimals * powerOfTen + 0.00001);
+		const roundedDecimals = adjustedValue / powerOfTen;
+		return (copiedValue - decimals + roundedDecimals).toString();
+	}
+	return copiedValue.toFixed ? copiedValue.toFixed(0) : copiedValue.toString();
+}
 
 /**
  * @param {number} amount the amount in currency expected
  * @param {number} numDecimals the number of decimals expected
  * @return {string} value after formatting with appropriate values
  */
-export function priceFormatter(amount: number, numDecimals: number = 2): string | number {
+export function getFormattedPrice(
+	amount: number,
+	numDecimals: number = 2,
+	shouldLog: boolean = false,
+): string | number {
 	if (!amount.toFixed || isNaN(amount) || numDecimals < 0) {
-		console.log('priceFormatter:: amount is invalid.');
+		shouldLog && console.log('priceFormatter:: amount is invalid.');
 		return amount;
 	}
-	if (amount < 0) return '-' + priceFormatter(-amount, numDecimals);
+	if (amount < 0) return '-' + getFormattedPrice(-amount, numDecimals);
 	let amountString = amount.toFixed(numDecimals);
 	if (amount < 1000 && amount >= 0) return '$' + amountString;
 	const commaSymbol = ',';
@@ -24,68 +38,23 @@ export function priceFormatter(amount: number, numDecimals: number = 2): string 
 	return '$' + amountString;
 }
 
-export function optionalDecimalFormat(
-	value: number,
-	maxOptionalDecimals: number = 2,
-	roundingType: string = 'round',
-): string | number {
-	const formatted = value;
-	if (maxOptionalDecimals > 0 && formatted % 1 > 0) {
-		const decimals = formatted % 1;
-		const powerOfTen = Math.pow(10, maxOptionalDecimals);
-		let adjustedValue = decimals * powerOfTen;
-		if (roundingType !== 'floor') {
-			adjustedValue = Math[roundingType](adjustedValue);
-		} else {
-			adjustedValue = Math[roundingType](adjustedValue + epsilon);
-		}
-		let relevantDecimals: any = adjustedValue / powerOfTen;
-		if (relevantDecimals < 1) {
-			relevantDecimals = relevantDecimals.toString().substring(1);
-		}
-		return formatted - decimals + relevantDecimals;
+export function getHumanReadableTime(input: number): string {
+	let plural = '';
+	if (input <= 1000) {
+		return input.toFixed(1) + ' milliseconds';
 	}
-	return formatted.toFixed ? formatted.toFixed(0) : formatted;
-}
-
-export function percentFormatter(value: number): string {
-	return `${Math.round(value * 100)}%`;
-}
-
-export function percentFormatterOptionalDecimal(
-	value: number,
-	maxOptionalDecimals: number = 2,
-): string {
-	return optionalDecimalFormat(value * 100, maxOptionalDecimals) + '%';
-}
-
-export function addWhiteSpaces(string: string, digit: number): string {
-	const digitMatch = new RegExp('(\\d{' + digit + '})', 'g');
-	return string.replace(digitMatch, '$1 ').replace(/(^\s+|\s+$)/, '');
-}
-
-export function addDash(string: string, digit: number): string {
-	const digitMatch = new RegExp('(\\d{' + digit + '})', 'g');
-	return string.replace(digitMatch, '$1-').replace(/([-]+$)/, '');
-}
-
-export function normalizeNumber(number: string, numberLength: number): string {
-	if (!number) {
-		return number;
+	if (input < 60 * 1000) {
+		plural = input / 1000 > 1 ? 's' : '';
+		return (input / 1000).toFixed(1) + ' second' + plural;
 	}
-	const onlyNums = number.replace(/[^\d]/g, '');
-
-	if (onlyNums.length <= numberLength) {
-		return onlyNums;
+	if (input < 60 * 60 * 1000) {
+		plural = input / 1000 / 60 > 1 ? 's' : '';
+		return (input / 1000 / 60).toFixed(1) + ' minute' + plural;
 	}
-	return onlyNums.slice(0, numberLength);
-}
-
-export function getPaddedZeroes(input: number | string, maxPadLength: number = 0) {
-	let answer = input.toString(),
-		capturedLength = answer.length;
-	for (let i = 0; i < maxPadLength - capturedLength; ++i) {
-		answer = 0 + answer;
+	if (input < 24 * 60 * 60 * 1000) {
+		plural = input / 1000 / 60 / 60 > 1 ? 's' : '';
+		return (input / 1000 / 60 / 60).toFixed(1) + ' hour' + plural;
 	}
-	return answer;
+	plural = input / 1000 / 60 / 60 / 24 > 1 ? 's' : '';
+	return (input / 1000 / 60 / 60 / 24).toFixed(1) + ' day' + plural;
 }

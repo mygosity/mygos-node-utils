@@ -3,59 +3,7 @@ import * as formatters from './formatting';
 import * as validator from './validation';
 import * as maths from './maths';
 import * as inputhandlers from './inputhandlers';
-import * as objectarrayutils from './objectarray';
 import logger from '../logger';
-import { Dictionary } from '../typedefinitions';
-
-/**
- * Auto mutates options and copies any properties from a default options structure
- * Take care not to mutate the returned default here else all defaults will be affected
- * Note: extra properties in the specific object will be retained
-  - only default properties are compared for existence and then copied to prevent undefined entries
-* @param {object} options custom options
-* @param {object} defaultOptions the default options to always have
-*/
-export function prefillDefaultOptions(
-	options: Dictionary<any>,
-	defaultOptions: Dictionary<any>,
-): Dictionary<any> {
-	if (options == null) {
-		//take care not to mutate the returned default here else all defaults will be affected
-		return defaultOptions;
-	} else {
-		function copyUndefinedPropsOnly(
-			source: Dictionary<any>,
-			destination: Dictionary<any> = {},
-		): Dictionary<any> {
-			for (let prop in source) {
-				if (destination[prop] === undefined) {
-					destination[prop] = source[prop];
-				} else {
-					if (validator.isObject(source[prop])) {
-						destination[prop] = copyUndefinedPropsOnly(source[prop], destination[prop]);
-					}
-				}
-			}
-			return destination;
-		}
-		options = copyUndefinedPropsOnly(defaultOptions, options);
-	}
-	return options;
-}
-
-/**
- * Use this to stop a timer you've defined
- * I've found that .stop() is required, without it, setTimeout seems to keep calling
- * @param {NodeJS.Timeout} timeoutCall the function reference to stop
- */
-export function stopTimer(timeoutCall: NodeJS.Timeout | any): void {
-	if (timeoutCall) {
-		if (timeoutCall.stop) {
-			timeoutCall.stop();
-		}
-		clearTimeout(timeoutCall);
-	}
-}
 
 /**
  * Will create a blob and manufacture a click event to force a download for streamed data
@@ -63,7 +11,11 @@ export function stopTimer(timeoutCall: NodeJS.Timeout | any): void {
  * @param {string} type the header string required to download the file
  * @param {string} filename the filename specified usually in the header
  */
-export function downloadFile(response: Dictionary<any>, type: string, filename: string): void {
+export function downloadFile(
+	response: { [key: string]: any },
+	type: string,
+	filename: string,
+): void {
 	const data = response.data;
 	try {
 		if (data && (data.size || data.length) > 0) {
@@ -85,6 +37,30 @@ export function downloadFile(response: Dictionary<any>, type: string, filename: 
 	} catch (e) {
 		logger.error({ logSignature: 'commonutils=>', funcSignature: 'downloadFile' }, e);
 	}
+}
+
+export function getObjectParamsFromUrl(
+	url: string,
+	autoConvertNumbers: boolean = false,
+): { [key: string]: string | number } {
+	const paramsObj = {};
+
+	const stringParams = url.substring(url.indexOf('?') + 1).split('&');
+	for (const section of stringParams) {
+		const [key, value] = section.split('=');
+		paramsObj[key] =
+			autoConvertNumbers && validator.isNumberByRegexp(value) ? parseFloat(value) : value;
+	}
+	return paramsObj;
+}
+
+export function getParametizedUrl(url: string, paramsObj: { [key: string]: any }): string {
+	let firstParam = true;
+	Object.keys(paramsObj).forEach((key: string) => {
+		url += (firstParam ? '?' : '&') + key + '=' + paramsObj[key];
+		firstParam = false;
+	});
+	return url;
 }
 
 export function getStringByteCount(input: string) {
@@ -124,34 +100,52 @@ export async function getTranspiledData(
 	});
 }
 
-export function getHumanReadableTime(input: number): string {
-	let plural = '';
-	if (input <= 1000) {
-		return input.toFixed(1) + ' milliseconds';
+export const noop = (): void => {};
+
+/**
+ * Auto mutates options and copies any properties from a default options structure
+ * Take care not to mutate the returned default here else all defaults will be affected
+ * Note: extra properties in the specific object will be retained
+  - only default properties are compared for existence and then copied to prevent undefined entries
+* @param {object} options custom options
+* @param {object} defaultOptions the default options to always have
+*/
+export function prefillDefaultOptions(
+	options: { [key: string]: any },
+	defaultOptions: { [key: string]: any },
+): { [key: string]: any } {
+	if (options == null) {
+		//take care not to mutate the returned default here else all defaults will be affected
+		return defaultOptions;
+	} else {
+		function copyUndefinedPropsOnly(
+			source: { [key: string]: any },
+			destination: { [key: string]: any } = {},
+		): { [key: string]: any } {
+			for (let prop in source) {
+				if (destination[prop] === undefined) {
+					destination[prop] = source[prop];
+				} else {
+					if (validator.isObject(source[prop])) {
+						destination[prop] = copyUndefinedPropsOnly(source[prop], destination[prop]);
+					}
+				}
+			}
+			return destination;
+		}
+		options = copyUndefinedPropsOnly(defaultOptions, options);
 	}
-	if (input < 60 * 1000) {
-		plural = input / 1000 > 1 ? 's' : '';
-		return (input / 1000).toFixed(1) + ' second' + plural;
-	}
-	if (input < 60 * 60 * 1000) {
-		plural = input / 1000 / 60 > 1 ? 's' : '';
-		return (input / 1000 / 60).toFixed(1) + ' minute' + plural;
-	}
-	if (input < 24 * 60 * 60 * 1000) {
-		plural = input / 1000 / 60 / 60 > 1 ? 's' : '';
-		return (input / 1000 / 60 / 60).toFixed(1) + ' hour' + plural;
-	}
-	plural = input / 1000 / 60 / 60 / 24 > 1 ? 's' : '';
-	return (input / 1000 / 60 / 60 / 24).toFixed(1) + ' day' + plural;
+	return options;
 }
 
 export default {
-	prefillDefaultOptions,
-	stopTimer,
 	downloadFile,
+	getObjectParamsFromUrl,
+	getParametizedUrl,
 	getStringByteCount,
-	getHumanReadableTime,
-	...objectarrayutils,
+	getTranspiledData,
+	noop,
+	prefillDefaultOptions,
 	...inputhandlers,
 	...maths,
 	...formatters,

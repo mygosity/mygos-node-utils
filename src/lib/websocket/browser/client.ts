@@ -46,8 +46,8 @@ export default class WebSocketClient {
 	retryCount: number;
 	forcedClose?: string;
 	prevEventTime: number;
-	keepAliveLoop: NodeJS.Timeout | number;
-	retryLoop: NodeJS.Timeout | number;
+	keepAliveLoop: ReturnType<typeof setInterval>;
+	retryLoop: ReturnType<typeof setInterval>;
 	lastKeepAliveTime: number;
 
 	onmessage: (connection: WebSocket, message: MessageEvent) => void;
@@ -133,7 +133,7 @@ export default class WebSocketClient {
 
 		this.connection.onopen = (event: Event): void => {
 			if (this.retryLoop != null) {
-				utils.stopTimer(this.retryLoop);
+				clearInterval(this.retryLoop);
 			}
 			this.retryCount = 0;
 			this.retryLoop = null;
@@ -226,7 +226,7 @@ export default class WebSocketClient {
 		if (this.retryLimit < 0 || this.retryCount < this.retryLimit) {
 			this.loadWebsocketConnections();
 		} else {
-			utils.stopTimer(this.retryLoop);
+			clearInterval(this.retryLoop);
 			this.retryLoop = null;
 		}
 		this.retryCount++;

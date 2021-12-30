@@ -1,6 +1,7 @@
 import moment from 'moment-timezone';
 import utils from '../common';
-import { AcceptableDateFormat } from '../typedefinitions';
+
+export type AcceptableDateFormat = Date | number | string;
 
 export const getDateFormat = (
 	date: AcceptableDateFormat,

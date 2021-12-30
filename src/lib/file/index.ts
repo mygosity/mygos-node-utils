@@ -1,8 +1,9 @@
 import fs, { Stats } from 'fs';
 import mkdirp from 'mkdirp';
-import { getHumanReadableTime, prefillDefaultOptions } from '../common';
-import utils from '../common';
 import logger from '../logger';
+import { prefillDefaultOptions } from '../common';
+import utils from '../common';
+import { getHumanReadableTime } from '../common/formatting';
 import fileManager from '../file/manager';
 
 export interface ReadFileOptionsType {
@@ -698,7 +699,7 @@ function _createNextFilename(
 	count: number,
 	ext: string,
 ): string {
-	return words + utils.getPaddedZeroes(count, options.nextFilePaddedZeroes) + '.' + ext;
+	return words + count.toString().padStart(options.nextFilePaddedZeroes, '0') + '.' + ext;
 }
 
 function _getNextFileName(

@@ -1,8 +1,7 @@
 import logger from '../logger';
-import { Dictionary } from '../typedefinitions';
 
-let filelocks: Dictionary<any> = {};
-let writequeue: Dictionary<any> = {};
+let filelocks: { [key: string]: any } = {};
+let writequeue: { [key: string]: any } = {};
 
 export class FileManager {
 	logSignature: string;

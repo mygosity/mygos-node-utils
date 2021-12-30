@@ -1,6 +1,5 @@
-import { prefillDefaultOptions } from '../common';
-import { isEmpty, isObject } from '../common/validation';
-import { Dictionary } from '../typedefinitions';
+import { prefillDefaultOptions } from '..';
+import { isEmpty, isObject } from '../validation';
 
 const TAB = '\t',
 	ENDLINE = '\n',
@@ -190,7 +189,7 @@ function parsedDataType(type: string, data: any, optionalData: any, depth: numbe
 }
 
 interface ParseOptions {
-	queuedInterfaces: Dictionary<any>;
+	queuedInterfaces: { [key: string]: any };
 	defaultInterfaceNameEnding: string;
 }
 
@@ -242,7 +241,7 @@ export function convertToTypeDefinition(
 		exportString = options.autoExportMap[interfaceName] ? 'export ' : '';
 	}
 
-	let exclusions: Dictionary<boolean> = {};
+	let exclusions: { [key: string]: boolean } = {};
 	for (let i = 0; i < options.excludeTypes.length; ++i) {
 		exclusions[options.excludeTypes[i]] = true;
 	}
@@ -252,7 +251,7 @@ export function convertToTypeDefinition(
 			options.maxAutoInnerInterfaceDepth >= recursionDepth) &&
 		options.autoInnerInterface;
 
-	const queuedInterfaces: Dictionary<any> = shouldCreateInterface ? {} : null;
+	const queuedInterfaces: { [key: string]: any } = shouldCreateInterface ? {} : null;
 	const parseOptions: ParseOptions = {
 		queuedInterfaces,
 		defaultInterfaceNameEnding: options.defaultInterfaceNameEnding,
@@ -286,7 +285,7 @@ export function convertToTypeDefinition(
 }
 
 function recursivelyHandleQueuedInterfaces(
-	queuedInterfaces: Dictionary<any>,
+	queuedInterfaces: { [key: string]: any },
 	options: ConvertToTypeOptions,
 	recursionDepth: number,
 ): string {

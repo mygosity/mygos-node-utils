@@ -1,4 +1,3 @@
-import * as dateUtils from '../../date';
 import prettier, { BuiltInParserName } from 'prettier';
 import * as validator from '../validation';
 
@@ -6,7 +5,7 @@ export function tryParseInteger(input: any, defaultValue: any = null): any {
 	if (typeof input === 'number') {
 		return input;
 	}
-	if (validator.invalidNumber(input)) {
+	if (validator.isInvalidNumber(input)) {
 		return defaultValue;
 	}
 	try {
@@ -21,7 +20,7 @@ export function tryParseNumber(input: any, defaultValue: any = null): any {
 	if (typeof input === 'number') {
 		return input;
 	}
-	if (validator.invalidNumber(input)) {
+	if (validator.isInvalidNumber(input)) {
 		return defaultValue;
 	}
 	try {
@@ -37,14 +36,6 @@ export function prettyParse(data: any, parser: BuiltInParserName): string {
 
 export function prettyJson(data: any, stringify: boolean = true): string {
 	const pack = stringify ? safeJsonStringify(data) : data;
-	return prettier.format(pack, { parser: 'json' });
-}
-
-export function prettyWrapWithTimestamp(data: any, stringify: boolean = true): string {
-	let pack: any = dateUtils.wrapWithAusTimeStamp(data);
-	if (stringify) {
-		pack = safeJsonStringify(pack);
-	}
 	return prettier.format(pack, { parser: 'json' });
 }
 
@@ -135,27 +126,6 @@ export function splitInReverseByCondition(
 	return [input.substring(0, inclusive ? i + 1 : i), input.substring(i + 1)];
 }
 
-export function getStringBetweenChars(target: string, start: string, end: string): string {
-	let startIndex = -1,
-		endIndex = -1;
-	for (let i = 0; i < target.length; ++i) {
-		if (startIndex === -1) {
-			if (target[i] === start) {
-				startIndex = i;
-			}
-		} else if (endIndex === -1) {
-			if (target[i] === end) {
-				endIndex = i;
-				break;
-			}
-		}
-	}
-	if (startIndex >= 0 && endIndex >= 0) {
-		return target.substring(startIndex + 1, endIndex);
-	}
-	return '';
-}
-
 export function getStringBetweenStrings(target: string, start: string, end: string): string {
 	let startIndex = -1,
 		endIndex = -1;
@@ -177,23 +147,7 @@ export function getStringBetweenStrings(target: string, start: string, end: stri
 	return '';
 }
 
-export function getFloatInsideString(target: string, defaultReturn: any = null): any {
-	let startIndex = -1;
-	for (let i = 0; i < target.length; ++i) {
-		if (startIndex === -1) {
-			if (!isNaN(Number(target[i]))) {
-				startIndex = i;
-			}
-		} else {
-			if (target[i] !== '.' && isNaN(Number(target[i]))) {
-				return parseFloat(target.substring(startIndex, i));
-			}
-		}
-	}
-	return defaultReturn;
-}
-
-export function extractErrorCode(msg: string) {
+export function getErrorCode(msg: string): number {
 	if (msg == null) return -1;
 	const matchCodePattern = /code[\s|\-]*[\d]*/g;
 	let codes = msg.match(matchCodePattern);

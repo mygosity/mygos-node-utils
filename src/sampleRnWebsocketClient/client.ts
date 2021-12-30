@@ -70,7 +70,7 @@ export default class WebSocketClient {
 	autoKeepAliveMaxTime: number;
 	keepAliveTimeInterval: number;
 	resetKeepAliveTimeOnPong: boolean;
-	autoKeepAliveCallback: Function;
+	autoKeepAliveCallback: () => void;
 	socketargs: any;
 
 	retryCount: number;
@@ -261,7 +261,7 @@ export default class WebSocketClient {
 		if (this.retryLimit < 0 || this.retryCount < this.retryLimit) {
 			this.loadWebsocketConnections();
 		} else {
-			utils.stopTimer(this.retryLoop);
+			clearInterval(this.retryLoop);
 			this.retryLoop = null;
 		}
 		this.retryCount++;
