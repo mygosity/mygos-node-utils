@@ -3,7 +3,7 @@
  * REPLACE AND DO WHAT YOU WANT WITH IT
  */
 export const paths = {
-	root: require('path').resolve(__dirname, '../'),
+	root: require('path').resolve(__dirname, '../') + '/',
 	logging: 'logging/',
 	error: 'errorlogs/',
 };
@@ -16,7 +16,7 @@ logger.configure({
 	errorPath: paths.error,
 	loggingPath: paths.logging,
 	reportVoice: {
-		[fileHelper.logSignature]: { default: true },
+		[fileHelper.logSignature]: { default: true, readFileSync: false },
 		[fileManager.logSignature]: { default: true },
 	},
 });

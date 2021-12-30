@@ -7,12 +7,6 @@ const readline = rl.createInterface({ input: process.stdin, output: process.stdo
 import { eventcontrol } from 'eventcontrol';
 import { webClient } from './lib/network/client';
 
-const globalContext = {
-	eventcontrol,
-	fileHelper,
-	webClient,
-};
-
 /***************************************************************
  * Command Class to hold all refs required or redirect requests
  ***************************************************************/
@@ -25,17 +19,22 @@ export function useSmartEvaluator(handler: (input: string) => Promise<void> = in
 	readline.on('line', handler);
 }
 
-export async function hotreloadFile(filepath: string): Promise<SafeReadFilePromiseType> {
-	return await fileHelper.safeReadFileSync('evalCode/code.js', { jsonParse: false });
+export async function hotReloadFile(filepath: string): Promise<SafeReadFilePromiseType> {
+	return await fileHelper.safeReadFileSync(filepath, { jsonParse: false });
 }
+
+const globalContext = {
+	eventcontrol,
+	fileHelper,
+	webClient,
+	hotReloadFile,
+};
 
 let inputHandler = async (input: string) => {
 	try {
 		if (input === '') {
 			console.log('hot reloading default file');
-			const { data, success } = await fileHelper.safeReadFileSync('/evalCode/code.js', {
-				jsonParse: false,
-			});
+			const { data, success } = await hotReloadFile('evalCode/code.js');
 			if (success) {
 				await _evalFunction.call(_evalContext, data.toString());
 			}

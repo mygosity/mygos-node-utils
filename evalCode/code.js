@@ -1,4 +1,9 @@
-const { eventcontrol, fileHelper, webClient } = globalContext;
+const {
+	eventcontrol,
+	fileHelper,
+	webClient,
+	hotReloadFile, //
+} = globalContext;
 
 function main() {
 	//
