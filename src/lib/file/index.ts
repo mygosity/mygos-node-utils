@@ -76,7 +76,12 @@ export class FileHelper {
 		const files = fs.readdirSync(baseDir);
 		const fileCollection = [];
 		const directories = [];
-		const _latestFileSearcher = (base: string, baseDir: string, directories: any[], fileCollection: any[]) => {
+		const _latestFileSearcher = (
+			base: string,
+			baseDir: string,
+			directories: any[],
+			fileCollection: any[],
+		) => {
 			return (currentFileName: string) => {
 				const stats = fs.statSync(baseDir + currentFileName);
 				if (stats.isDirectory()) {
@@ -101,7 +106,9 @@ export class FileHelper {
 		while (directories.length) {
 			const currentDir = directories.pop();
 			const files = fs.readdirSync(currentDir.path);
-			files.map(_latestFileSearcher(base, currentDir.path + '/', directories, fileCollection));
+			files.map(
+				_latestFileSearcher(base, currentDir.path + '/', directories, fileCollection),
+			);
 		}
 		return fileCollection.length ? fileCollection[0].path : null;
 	};
@@ -142,7 +149,10 @@ export class FileHelper {
 		return fs.existsSync(filepath);
 	};
 
-	safeReadFileSync = (filepath: string, options: ReadFileOptionsType = {}): Promise<SafeReadFilePromiseType> => {
+	safeReadFileSync = (
+		filepath: string,
+		options: ReadFileOptionsType = {},
+	): Promise<SafeReadFilePromiseType> => {
 		return new Promise((resolve) => {
 			try {
 				const data = this.readFileSync(filepath, options);
@@ -194,7 +204,11 @@ export class FileHelper {
 		});
 	};
 
-	writeToFile = async (filepath: string, data: any, options: WriteFileOptionsType = {}): Promise<any> => {
+	writeToFile = async (
+		filepath: string,
+		data: any,
+		options: WriteFileOptionsType = {},
+	): Promise<any> => {
 		const o = prefillDefaultOptions(options, defaultWriteFileOptions);
 		if (!o.overwrite && o.append && this.fileExists(filepath, o)) {
 			return this.appendToFile(filepath, data, o);
@@ -214,17 +228,31 @@ export class FileHelper {
 				if (fileManager.tryLock(filepath)) {
 					_promisedWriteToFile(filepath, data, o, resolve, reject);
 				} else {
-					fileManager.queue(filepath, data, [o, resolve, reject], _promisedWriteToFile, true);
+					fileManager.queue(
+						filepath,
+						data,
+						[o, resolve, reject],
+						_promisedWriteToFile,
+						true,
+					);
 				}
 			} else {
-				logger.report(this, 'writeToFile:: safely aborted due to options set: ' + filepath, options);
+				logger.report(
+					this,
+					'writeToFile:: safely aborted due to options set: ' + filepath,
+					options,
+				);
 				resolve('writeToFile:: safely aborted due to options set filepath: ' + filepath);
 			}
 		});
 	};
 
 	//TODO:: add size limit check here too
-	appendToFile = async (filepath: string, data: any, options: WriteFileOptionsType = {}): Promise<any> => {
+	appendToFile = async (
+		filepath: string,
+		data: any,
+		options: WriteFileOptionsType = {},
+	): Promise<any> => {
 		const o = prefillDefaultOptions(options, defaultWriteFileOptions);
 		if (!this.fileExists(filepath, o)) {
 			this.writeToFile(filepath, data, o);
@@ -236,13 +264,17 @@ export class FileHelper {
 
 		return new Promise((resolve, reject) => {
 			if (fileManager.tryLock(filepath)) {
-				_promisedAppendToFile(filepath, data, o, resolve, reject);
+				return _promisedAppendToFile(filepath, data, o, resolve, reject);
 			}
 			fileManager.queue(filepath, data, [o, resolve, reject], _promisedAppendToFile, true);
 		});
 	};
 
-	writeContinuousJson = async (filepath: string, data: any, options: WriteFileOptionsType): Promise<any> => {
+	writeContinuousJson = async (
+		filepath: string,
+		data: any,
+		options: WriteFileOptionsType,
+	): Promise<any> => {
 		const o = prefillDefaultOptions(options, defaultWriteFileOptions);
 		filepath = this.getResolvedPath(filepath);
 		logger.report(this, 'writeContinuousJson:: start', { filepath });
@@ -275,7 +307,14 @@ export class FileHelper {
 					copiedArgs[1] = copiedArgs[1].concat(newArgs[1]);
 					copiedArgs[2] = copiedArgs[2].concat(newArgs[2]);
 				};
-				fileManager.queue(filepath, jsondata, [o, [resolve], [reject]], _writeJsonFile, false, argumentBatcher);
+				fileManager.queue(
+					filepath,
+					jsondata,
+					[o, [resolve], [reject]],
+					_writeJsonFile,
+					false,
+					argumentBatcher,
+				);
 			}
 		});
 	};
@@ -394,7 +433,9 @@ const _writeJsonFile = function(
 				_batchHandlePromise(reject, error);
 			}
 			logger.report(fileHelper, '_writeJsonFile:: created stub: ' + filepath);
-			fs.appendFile(filepath, jsondata + _getOppositeBracket(options.jsonWrapper), function(error) {
+			fs.appendFile(filepath, jsondata + _getOppositeBracket(options.jsonWrapper), function(
+				error,
+			) {
 				fileManager.release(filepath);
 				if (error) {
 					logger.error(fileHelper, error, {
@@ -406,8 +447,14 @@ const _writeJsonFile = function(
 					});
 					_batchHandlePromise(reject, error);
 				}
-				logger.report(fileHelper, '_writeJsonFile:: appendToFile:: completed : ' + filepath);
-				_batchHandlePromise(resolve, '_writeJsonFile:: appendToFile:: completed : ' + filepath);
+				logger.report(
+					fileHelper,
+					'_writeJsonFile:: appendToFile:: completed : ' + filepath,
+				);
+				_batchHandlePromise(
+					resolve,
+					'_writeJsonFile:: appendToFile:: completed : ' + filepath,
+				);
 			});
 		});
 	};
@@ -518,8 +565,14 @@ const _appendToJsonFile = function(
 							}
 							fs.close(fileDescriptor, function() {
 								fileManager.release(filepath);
-								logger.report(fileHelper, '_appendToJsonFile:: success: path:\n' + filepath);
-								_batchHandlePromise(resolve, '_appendToJsonFile:: success: path:' + filepath);
+								logger.report(
+									fileHelper,
+									'_appendToJsonFile:: success: path:\n' + filepath,
+								);
+								_batchHandlePromise(
+									resolve,
+									'_appendToJsonFile:: success: path:' + filepath,
+								);
 							});
 						},
 					);
@@ -553,7 +606,12 @@ function _isSizeExceeded(filepath: string, options: WriteFileOptionsType): boole
 	return false;
 }
 
-function _createNextFilename(options: WriteFileOptionsType, words: string, count: number, ext: string): string {
+function _createNextFilename(
+	options: WriteFileOptionsType,
+	words: string,
+	count: number,
+	ext: string,
+): string {
 	return words + utils.getPaddedZeroes(count, options.nextFilePaddedZeroes) + '.' + ext;
 }
 
@@ -565,7 +623,11 @@ function _getNextFileName(
 ): { nextFileName: string; prevFileName: string } {
 	const [base, ext] = utils.splitInReverseByCondition(file, (i: string) => i === '.');
 	// console.log(base, ext);
-	const [words, numbers] = utils.splitInReverseByCondition(base, (i: string) => isNaN(Number(i)), true);
+	const [words, numbers] = utils.splitInReverseByCondition(
+		base,
+		(i: string) => isNaN(Number(i)),
+		true,
+	);
 	let count: number = utils.tryParseNumber(numbers, 0);
 	let nextFileName = _createNextFilename(options, words, count, ext);
 	let prevFileName = nextFileName;
