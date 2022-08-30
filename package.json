@@ -22,7 +22,7 @@
 	"dependencies": {
 		"eventcontrol": "^2.0.0",
 		"mkdirp": "^1.0.4",
-		"moment-timezone": "^0.5.34",
+		"moment-timezone": "^0.5.35",
 		"websocket": "^1.0.34",
 		"ws": "^8.4.0"
 	},
