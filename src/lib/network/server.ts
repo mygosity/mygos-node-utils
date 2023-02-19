@@ -4,7 +4,7 @@ import fs from 'fs';
 import logger from '../logger';
 import fileHelper from '../file';
 import { getTranspiledData } from '../common';
-import { wrapWithAusTimeStamp } from '../date';
+import { getAusTimestamp } from '../date';
 
 import { safeJsonParse, splitInReverseByCondition } from '../common/inputhandlers';
 import ServerWrapper from './wrapper';
@@ -252,16 +252,12 @@ class LocalServer {
 				}
 			}
 			if (postedData !== undefined) {
-				const data: any = wrapWithAusTimeStamp({ data: postedData?.data ?? postedData });
-				const msg: string = postedData?.msg ?? '';
-				if (msg && data.msg == null) {
-					data.msg = msg;
-				}
+				const data = { data: postedData, timeReceived: getAusTimestamp(Date.now()) };
 				logger.report(logObj, `data pasted in console log`, {
-					postedData,
+					data,
 					header: req.headers,
 				});
-				logger.record(`${paths.root}/_logging/console_logs_001`, postedData, {
+				logger.record(`${paths.root}/_logging/console_logs_001`, data, {
 					autoCreatePath: true,
 					sizeLimit: 20,
 					relativePath: false,
