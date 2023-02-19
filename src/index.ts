@@ -1,31 +1,36 @@
-/**
- * THIS IS A DUMMY FILE TO SHOW HOW TO USE THE UTILITIES
- * REPLACE AND DO WHAT YOU WANT WITH IT
- */
-export const paths = {
-	root: require('path').resolve(__dirname, '../') + '/',
-	logging: 'logging/',
-	error: 'errorlogs/',
-};
-
 import fileHelper, { defaultWriteFileOptions } from './lib/file';
 import fileManager from './lib/file/manager';
+import { paths } from './settings';
 import logger from './lib/logger';
+import * as commands from './commands';
+
 logger.configure({
 	prettyFormat: true,
 	errorPath: paths.error,
 	loggingPath: paths.logging,
 	reportVoice: {
-		[fileHelper.logSignature]: { default: true, readFileSync: false },
-		[fileManager.logSignature]: { default: true },
+		[fileHelper.logSignature]: {
+			default: true,
+			readFileSync: false,
+			_appendToJsonFile: false,
+			_writeJsonFile: false,
+			splitFolderAndFile: false,
+			appendToFile: false,
+			_promisedAppendToFile: false,
+			writeContinuousJson: false,
+		},
+		[fileManager.logSignature]: { default: false },
 	},
+	enableAutomaticLogToText: true,
 });
+
 fileHelper.setBasePath(paths.root);
 defaultWriteFileOptions.prettyFormat = true;
-import * as commands from './commands';
 
 function Main() {
-	logger.log('Main:: starting application');
+	const logObj = { logSignature: 'ENTRY=>', funcSignature: 'Main' };
+	logger.report(logObj, `**************************************************************************************`);
+	logger.report(logObj, `starting application`);
 	commands.useSmartEvaluator(commands.commandInterceptor);
 }
 Main();

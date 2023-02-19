@@ -1,5 +1,3 @@
-import * as utils from '../lib/common';
-
 type WebSocket = any;
 type MessageEvent = any;
 
@@ -91,7 +89,7 @@ export default class WebSocketClient {
 		url: string,
 		onmessage: (connection: WebSocket, message: MessageEvent) => void,
 		listeners: BrowserListenerOptions = {},
-		options: WebsocketClientOptionsType = {},
+		options: WebsocketClientOptionsType = {}
 	) {
 		this.connection = null;
 		this.url = url;
@@ -225,10 +223,7 @@ export default class WebSocketClient {
 		} else if (msSinceLastUpdate > this.minTimeSinceLastUpdate) {
 			this.handleKeepAlive();
 		}
-		if (
-			this.lastKeepAliveTime == null ||
-			currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime
-		) {
+		if (this.lastKeepAliveTime == null || currentTime - this.lastKeepAliveTime > this.autoKeepAliveMaxTime) {
 			this.handleKeepAlive();
 		}
 	};

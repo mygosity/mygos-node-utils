@@ -1,10 +1,10 @@
+import logger, { LoggableType } from '../logger';
+import fileManager from '../file/manager';
 import fs, { Stats } from 'fs';
 import mkdirp from 'mkdirp';
-import logger from '../logger';
-import { prefillDefaultOptions } from '../common';
-import utils from '../common';
-import { getHumanReadableTime } from '../common/formatting';
-import fileManager from '../file/manager';
+import { prettyJson, safeJsonParse, safeJsonStringify, splitInReverseByCondition, tryParseFloat } from '../common/inputhandlers';
+import { prefillDefaultOptions } from '../common/pure/misc';
+import { getHumanReadableTime, getPaddedZeroes } from '../common/pure/formatting';
 
 export interface ReadFileOptionsType {
 	relativePath?: boolean;
@@ -40,7 +40,7 @@ function WriteFileOptions() {
 	this.overwrite = false;
 	this.nextFileName = false;
 	this.nextFilePaddedZeroes = 3;
-	this.autoCreatePath = false;
+	this.autoCreatePath = true;
 	this.jsonParse = true;
 	this.jsonStringify = true;
 	this.jsonWrapper = '[';
@@ -50,6 +50,8 @@ function WriteFileOptions() {
 	this.prettyFormat = false;
 }
 export const defaultWriteFileOptions: WriteFileOptionsType = new WriteFileOptions();
+export const overwriteFileOptions = { append: false, overwrite: true };
+export const appendFileOptions = { append: true, overwrite: false };
 
 function ReadFileOptions() {
 	this.relativePath = true;
@@ -67,21 +69,16 @@ export class FileHelper {
 	}
 
 	setBasePath = (path: string): void => {
-		basepath = path;
+		basepath = path + (path[path.length - 1] !== '/' ? '/' : '');
 	};
 
 	findLatestFile = (baseDir: string, filename: string): string => {
 		//index all files recursively from the dir
-		const [base, ext] = utils.splitInReverseByCondition(filename, (i) => i === '.');
+		const [base, ext] = splitInReverseByCondition(filename, (i) => i === '.');
 		const files = fs.readdirSync(baseDir);
 		const fileCollection = [];
 		const directories = [];
-		const _latestFileSearcher = (
-			base: string,
-			baseDir: string,
-			directories: any[],
-			fileCollection: any[],
-		) => {
+		const _latestFileSearcher = (base: string, baseDir: string, directories: any[], fileCollection: any[]) => {
 			return (currentFileName: string) => {
 				const stats = fs.statSync(baseDir + currentFileName);
 				if (stats.isDirectory()) {
@@ -106,9 +103,7 @@ export class FileHelper {
 		while (directories.length) {
 			const currentDir = directories.pop();
 			const files = fs.readdirSync(currentDir.path);
-			files.map(
-				_latestFileSearcher(base, currentDir.path + '/', directories, fileCollection),
-			);
+			files.map(_latestFileSearcher(base, currentDir.path + '/', directories, fileCollection));
 		}
 		return fileCollection.length ? fileCollection[0].path : null;
 	};
@@ -116,7 +111,7 @@ export class FileHelper {
 	getFilesAndDirectories(
 		baseDir: string,
 		filePredicate: (filename: string, stats: fs.Stats, path: string) => boolean = () => true,
-		dirPredicate: (filename: string, stats: fs.Stats, path: string) => boolean = () => true,
+		dirPredicate: (filename: string, stats: fs.Stats, path: string) => boolean = () => true
 	): {
 		files: { path: string; stats: Stats; name: string }[];
 		directories: { path: string; stats: Stats; name: string }[];
@@ -170,7 +165,10 @@ export class FileHelper {
 			checkFileSize: false,
 		});
 		const latestFilepath = dir + prevFileName;
-		logger.report(this, { latestFilepath, prevFileName, nextFileName });
+		logger.report(
+			{ logSignature: this.logSignature, funcSignature: 'getLatestFilePath' },
+			{ latestFilepath, prevFileName, nextFileName }
+		);
 		return latestFilepath;
 	};
 
@@ -202,7 +200,7 @@ export class FileHelper {
 			shouldLog?: boolean;
 			shouldLogOnFalseOnly?: boolean;
 			shouldIncludeFileStats?: boolean;
-		} = {},
+		} = {}
 	): boolean => {
 		const timeSinceModifiedMs = Date.now() - fileStat.mtimeMs;
 		const isFileModdedInTime = timeSinceModifiedMs <= withinTimeMs;
@@ -225,16 +223,13 @@ export class FileHelper {
 			shouldLog?: boolean;
 			shouldLogOnFalseOnly?: boolean;
 			shouldIncludeFileStats?: boolean;
-		} = {},
+		} = {}
 	): boolean => {
 		if (options.relativePath) filepath = this.getResolvedPath(filepath);
 		return this.isFileStatModifiedSince(fs.statSync(filepath), withinTimeMs, options);
 	};
 
-	safeReadFileSync = (
-		filepath: string,
-		options: ReadFileOptionsType = {},
-	): Promise<SafeReadFilePromiseType> => {
+	safeReadFileSync = (filepath: string, options: ReadFileOptionsType = {}): Promise<SafeReadFilePromiseType> => {
 		return new Promise((resolve) => {
 			try {
 				const data = this.readFileSync(filepath, options);
@@ -246,32 +241,24 @@ export class FileHelper {
 	};
 
 	readFileSync = (filepath: string, options: ReadFileOptionsType = {}): any => {
+		const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'readFileSync', shouldNotLogToTextFile: false };
 		const o = prefillDefaultOptions(options, defaultReadFileOptions);
 		if (o.relativePath) filepath = this.getResolvedPath(filepath);
-		logger.report(
-			{ logSignature, funcSignature: 'readFileSync' },
-			'readFileSync:: fileExists: ' + this.fileExists(filepath, o),
-			filepath,
-			o,
-		);
-		if (o.jsonParse) return utils.safeJsonParse(fs.readFileSync(filepath));
+		logger.report(logObj, `readFileSync:: fileExists: ${this.fileExists(filepath, o)} filepath: ${filepath}`, o);
+		if (o.jsonParse) return safeJsonParse(fs.readFileSync(filepath));
 		return fs.readFileSync(filepath);
 	};
 
 	readFile = async (filepath: string, options: ReadFileOptionsType = {}): Promise<any> => {
+		const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'readFile', shouldNotLogToTextFile: false };
 		const o = prefillDefaultOptions(options, defaultReadFileOptions);
 		if (o.relativePath) filepath = this.getResolvedPath(filepath);
-		logger.report(
-			{ logSignature, funcSignature: 'readFile' },
-			'readFile:: fileExists: ' + this.fileExists(filepath, o),
-			filepath,
-			o,
-		);
+		logger.report(logObj, `readFile:: fileExists: ${this.fileExists(filepath, o)} filepath: ${filepath}`, o);
 
 		return new Promise((resolve, reject) => {
 			fs.readFile(filepath, function (error, data) {
 				if (error) {
-					logger.error(this, error, {
+					logger.error(logObj, error, {
 						src: 'FileHelper=>',
 						filepath,
 						options,
@@ -281,63 +268,44 @@ export class FileHelper {
 					options.onError(error);
 					reject(error);
 				}
-				resolve(o.jsonParse ? utils.safeJsonParse(data) : data);
+				resolve(o.jsonParse ? safeJsonParse(data) : data);
 			});
 		});
 	};
 
-	writeToFile = async (
-		filepath: string,
-		data: any,
-		options: WriteFileOptionsType = {},
-	): Promise<any> => {
+	writeToFile = async (filepath: string, data: any, options: WriteFileOptionsType = {}): Promise<any> => {
+		const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'writeToFile', shouldNotLogToTextFile: false };
 		const o = prefillDefaultOptions(options, defaultWriteFileOptions);
 		if (!o.overwrite && o.append && this.fileExists(filepath, o)) {
 			return this.appendToFile(filepath, data, o);
 		}
 		if (o.relativePath) filepath = this.getResolvedPath(filepath);
-		console.log('writeToFile', {
-			filepath,
-		});
 		if (o.autoCreatePath) {
 			const [dir] = this.splitFolderAndFile(filepath);
 			this.assertDirExists(dir);
 		}
 		return new Promise((resolve, reject) => {
 			if (o.nextFileName && fs.existsSync(filepath)) {
-				logger.report(this, 'writeToFile:: getting the next file name!');
 				const [dir, file] = _autoParseNextFileName(filepath, o);
+				logger.report(logObj, `writeToFile:: getting the next file name: ${file}`);
 				_promisedWriteToFile(dir + file, data, o, resolve, reject);
 			} else if (o.overwrite || (!o.overwrite && !fs.existsSync(filepath))) {
-				logger.report(this, 'writeToFile:: attempting to overwrite');
+				logger.report(logObj, `writeToFile:: attempting to overwrite ${filepath}`);
 				if (fileManager.tryLock(filepath)) {
 					_promisedWriteToFile(filepath, data, o, resolve, reject);
 				} else {
-					fileManager.queue(
-						filepath,
-						data,
-						[o, resolve, reject],
-						_promisedWriteToFile,
-						true,
-					);
+					fileManager.queue(filepath, data, [o, resolve, reject], _promisedWriteToFile, true);
 				}
 			} else {
-				logger.report(
-					this,
-					'writeToFile:: safely aborted due to options set: ' + filepath,
-					options,
-				);
+				logger.report(logObj, `writeToFile:: safely aborted due to options set: ${filepath}`, options);
 				resolve('writeToFile:: safely aborted due to options set filepath: ' + filepath);
 			}
 		});
 	};
 
 	//TODO:: add size limit check here too
-	appendToFile = async (
-		filepath: string,
-		data: any,
-		options: WriteFileOptionsType = {},
-	): Promise<any> => {
+	appendToFile = async (filepath: string, data: any, options: WriteFileOptionsType = {}): Promise<any> => {
+		const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'appendToFile', shouldNotLogToTextFile: false };
 		const o = prefillDefaultOptions(options, defaultWriteFileOptions);
 		if (!this.fileExists(filepath, o)) {
 			this.writeToFile(filepath, data, o);
@@ -345,30 +313,27 @@ export class FileHelper {
 		}
 		if (o.relativePath) filepath = this.getResolvedPath(filepath);
 		if (o.prepend !== undefined) data = o.prepend + data;
-		logger.report(this, 'appendToFile:: starting to append: ', filepath);
+		logger.report(logObj, 'appendToFile:: starting to append: ' + filepath);
 
 		return new Promise((resolve, reject) => {
 			if (fileManager.tryLock(filepath)) {
-				_promisedAppendToFile(filepath, data, o, resolve, reject);
+				return _promisedAppendToFile(filepath, data, o, resolve, reject);
 			}
 			fileManager.queue(filepath, data, [o, resolve, reject], _promisedAppendToFile, true);
 		});
 	};
 
-	writeContinuousJson = async (
-		filepath: string,
-		data: any,
-		options: WriteFileOptionsType,
-	): Promise<any> => {
+	writeContinuousJson = async (filepath: string, data: any, options: WriteFileOptionsType): Promise<any> => {
+		const logObj: LoggableType = {
+			logSignature: this.logSignature,
+			funcSignature: 'writeContinuousJson',
+			shouldNotLogToTextFile: false,
+		};
 		const o = prefillDefaultOptions(options, defaultWriteFileOptions);
 		filepath = this.getResolvedPath(filepath);
-		logger.report(this, 'writeContinuousJson:: start', { filepath });
+		logger.report(logObj, `writeContinuousJson:: start ${filepath}`);
 
-		const jsondata = o.jsonStringify
-			? o.prettyFormat
-				? utils.prettyJson(data)
-				: utils.safeJsonStringify(data, filepath)
-			: data;
+		const jsondata = o.jsonStringify ? (o.prettyFormat ? prettyJson(data) : safeJsonStringify(data, filepath)) : data;
 
 		if (o.autoCreatePath) {
 			const [dir] = this.splitFolderAndFile(filepath);
@@ -379,10 +344,7 @@ export class FileHelper {
 			if (_isSizeExceeded(filepath, o)) {
 				const [dir, file] = _autoParseNextFileName(filepath, o);
 				filepath = dir + file;
-				logger.report(
-					fileHelper,
-					'writeContinuousJson:: size limit exceeded, using new file name: ' + filepath,
-				);
+				logger.report(logObj, `writeContinuousJson:: size limit exceeded, using new file name: ${filepath}`);
 			}
 			if (fileManager.tryLock(filepath)) {
 				_writeJsonFile(filepath, jsondata, o, resolve, reject);
@@ -392,14 +354,7 @@ export class FileHelper {
 					copiedArgs[1] = copiedArgs[1].concat(newArgs[1]);
 					copiedArgs[2] = copiedArgs[2].concat(newArgs[2]);
 				};
-				fileManager.queue(
-					filepath,
-					jsondata,
-					[o, [resolve], [reject]],
-					_writeJsonFile,
-					false,
-					argumentBatcher,
-				);
+				fileManager.queue(filepath, jsondata, [o, [resolve], [reject]], _writeJsonFile, false, argumentBatcher);
 			}
 		});
 	};
@@ -413,14 +368,21 @@ export class FileHelper {
 		}
 	};
 
-	splitFolderAndFile = (filepath: string): string[] => {
-		logger.report(fileHelper, 'splitFolderAndFile::', filepath);
-		let i;
+	splitFolderAndFile = (filepath: string): [string, string] => {
+		if (filepath.length === 0) return ['', ''];
+		const logObj: LoggableType = {
+			logSignature: this.logSignature,
+			funcSignature: 'splitFolderAndFile',
+			shouldNotLogToTextFile: false,
+		};
+		logger.report(logObj, 'splitFolderAndFile::', filepath);
+		let i = 0;
 		for (i = filepath.length - 2; i >= 0; --i) {
 			if (filepath[i] === '/' || filepath[i] === '\\') {
 				break;
 			}
 		}
+		i = Math.max(i, 0);
 		return [filepath.substring(0, i + 1), filepath.substring(i + 1)];
 	};
 }
@@ -444,56 +406,38 @@ const _batchHandlePromise = (cb: Function, ...args: any[]): void => {
 	}
 };
 
-const _promisedWriteToFile = (
-	filepath: string,
-	data: any,
-	o: WriteFileOptionsType,
-	resolve: Function,
-	reject: Function,
-): void => {
-	const writtenData = o.jsonStringify
-		? o.prettyFormat
-			? utils.prettyJson(data)
-			: utils.safeJsonStringify(data, filepath)
-		: data;
+const _promisedWriteToFile = (filepath: string, data: any, o: WriteFileOptionsType, resolve: Function, reject: Function): void => {
+	const logObj: LoggableType = { logSignature, funcSignature: '_promisedWriteToFile', shouldNotLogToTextFile: false };
+	const writtenData = o.jsonStringify ? (o.prettyFormat ? prettyJson(data) : safeJsonStringify(data, filepath)) : data;
 	fs.writeFile(filepath, writtenData, function (error) {
 		fileManager.release(filepath);
 		if (error) {
-			logger.error({ logSignature }, error, {
+			logger.error(logObj, error, {
 				src: 'FileHelper|nextFileName',
 				funcName: 'writeToFile',
 			});
-			reject(error);
+			return reject(error);
 		}
 		const successMsg = 'writeToFile:: completed: ' + filepath;
-		logger.report({ logSignature }, successMsg);
+		logger.report(logObj, successMsg);
 		resolve(successMsg);
 	});
 };
 
-const _promisedAppendToFile = (
-	filepath: string,
-	data: any,
-	o: WriteFileOptionsType,
-	resolve: Function,
-	reject: Function,
-): void => {
-	const writtenData = o.jsonStringify
-		? o.prettyFormat
-			? utils.prettyJson(data)
-			: utils.safeJsonStringify(data, filepath)
-		: data;
+const _promisedAppendToFile = (filepath: string, data: any, o: WriteFileOptionsType, resolve: Function, reject: Function): void => {
+	const logObj: LoggableType = { logSignature, funcSignature: '_promisedAppendToFile', shouldNotLogToTextFile: false };
+	const writtenData = o.jsonStringify ? (o.prettyFormat ? prettyJson(data) : safeJsonStringify(data, filepath)) : data;
 	fs.appendFile(filepath, writtenData, function (error) {
 		fileManager.release(filepath);
 		if (error) {
-			logger.error({ logSignature }, error, {
+			logger.error(logObj, error, {
 				src: 'FileHelper',
 				funcName: 'appendToFile',
 			});
-			reject(error);
+			return reject(error);
 		}
-		const successMsg = 'appendToFile:: completed: ' + filepath;
-		logger.report({ logSignature }, successMsg);
+		const successMsg = '_promisedAppendToFile:: completed: ' + filepath;
+		logger.report(logObj, successMsg);
 		resolve(successMsg);
 	});
 };
@@ -503,91 +447,79 @@ const _writeJsonFile = function (
 	jsondata: string,
 	options: WriteFileOptionsType,
 	resolve: Function,
-	reject: Function,
+	reject: Function
 ): void {
+	const logObj: LoggableType = { logSignature, funcSignature: '_writeJsonFile', shouldNotLogToTextFile: false };
 	const _createJson = function () {
 		fs.writeFile(filepath, options.jsonWrapper, function (error) {
 			if (error) {
-				logger.error(fileHelper, error, {
+				logger.error(logObj, error, {
 					src: 'FileHelper_Priv',
 					funcName: '_writeJsonFile|_createJson|writeFile',
 					filepath,
 					jsondata,
 					options,
 				});
-				_batchHandlePromise(reject, error);
+				fileManager.release(filepath);
+				return _batchHandlePromise(reject, error);
 			}
-			logger.report(fileHelper, '_writeJsonFile:: created stub: ' + filepath);
-			fs.appendFile(
-				filepath,
-				jsondata + _getOppositeBracket(options.jsonWrapper),
-				function (error) {
-					fileManager.release(filepath);
-					if (error) {
-						logger.error(fileHelper, error, {
-							src: 'fileHelper',
-							funcName: '_writeJsonFile|_createJson|appendFile',
-							filepath,
-							jsondata,
-							options,
-						});
-						_batchHandlePromise(reject, error);
-					}
-					logger.report(
-						fileHelper,
-						'_writeJsonFile:: appendToFile:: completed : ' + filepath,
-					);
-					_batchHandlePromise(
-						resolve,
-						'_writeJsonFile:: appendToFile:: completed : ' + filepath,
-					);
-				},
-			);
+			logger.report(logObj, '_writeJsonFile:: created stub: ' + filepath);
+			fs.appendFile(filepath, jsondata + _getOppositeBracket(options.jsonWrapper), function (error) {
+				fileManager.release(filepath);
+				if (error) {
+					logger.error(logObj, error, {
+						src: 'fileHelper',
+						funcName: '_writeJsonFile|_createJson|appendFile',
+						filepath,
+						jsondata,
+						options,
+					});
+					return _batchHandlePromise(reject, error);
+				}
+				logger.report(logObj, '_writeJsonFile:: appendToFile:: completed : ' + filepath);
+				_batchHandlePromise(resolve, '_writeJsonFile:: appendToFile:: completed : ' + filepath);
+			});
 		});
 	};
 	//needs to confirm it actually succeeded, a fail callback should be provided
 	const onFail = (error: any, size: any) => {
 		if (error != undefined && size !== 0) {
 			fileManager.release(filepath);
-			logger.error(fileHelper, error, {
+			logger.error(logObj, error, {
 				src: 'FileHelper_Priv',
 				funcName: 'onFail',
 				size,
 				filepath,
 				options,
 			});
-		} else {
-			_createJson();
+			return;
 		}
+		_createJson();
 	};
-	if (!fs.existsSync(filepath)) {
+	if (!fs.existsSync(filepath) || fs.statSync(filepath).size === 0 || options.overwrite) {
 		_createJson();
 	} else {
 		_appendToJsonFile(filepath, ',' + jsondata, onFail, resolve, reject);
 	}
 };
 
-const _appendToJsonFile = function (
-	filepath: string,
-	data: any,
-	onFail: Function,
-	resolve: Function,
-	reject: Function,
-): void {
+const _appendToJsonFile = function (filepath: string, data: any, onFail: Function, resolve: Function, reject: Function): void {
+	const logObj: LoggableType = { logSignature, funcSignature: '_appendToJsonFile', shouldNotLogToTextFile: false };
 	fs.stat(filepath, function (errorStat, stat) {
-		if (errorStat || stat.size === 0) {
-			if (errorStat)
-				logger.error(fileHelper, errorStat, {
+		if (errorStat) {
+			logger.report(logObj, '_appendToJsonFile:: pre file stream:', { errorStat });
+			if (errorStat) {
+				logger.error(logObj, errorStat, {
 					src: 'FileHelper_Priv',
 					funcName: '_appendToJsonFile|stat',
 					filepath,
 					data,
 					stat,
 				});
+			}
 			onFail(errorStat, stat.size);
 			return _batchHandlePromise(reject, { errorStat, stat });
 		}
-		logger.report(fileHelper, '_appendToJsonFile:: pre file stream: ');
 
 		const size = stat.size,
 			endBytes = 16,
@@ -597,15 +529,16 @@ const _appendToJsonFile = function (
 				end: size,
 			},
 			stream = fs.createReadStream(filepath, streamArgs);
+		logger.report(logObj, '_appendToJsonFile:: pre file stream:', { streamArgs });
 
 		stream.on('error', function (streamError) {
-			logger.report(fileHelper, '_appendToJsonFile:: error stream event:\n', {
+			logger.report(logObj, '_appendToJsonFile:: error stream event:\n', {
 				streamError,
 				filepath,
 				streamArgs,
 				size,
 			});
-			logger.error(fileHelper, streamError, {
+			logger.error(logObj, streamError, {
 				src: 'FileHelper_Priv',
 				funcName: '_appendToJsonFile|on("error"',
 				filepath,
@@ -619,7 +552,7 @@ const _appendToJsonFile = function (
 		});
 
 		stream.on('data', function (dataStream) {
-			logger.report(fileHelper, '_appendToJsonFile:: stream.data:');
+			logger.report(logObj, '_appendToJsonFile:: stream.data:');
 			const str = dataStream.toString();
 			let byteCount = 1,
 				dataEnd = '';
@@ -636,7 +569,7 @@ const _appendToJsonFile = function (
 						size - byteCount >= 0 ? size - byteCount : 0,
 						function (filewriteError) {
 							if (filewriteError) {
-								logger.error(fileHelper, filewriteError, {
+								logger.error(logObj, filewriteError, {
 									src: 'FileHelper_Priv',
 									funcName: '_appendToJsonFile|on("data")|write',
 									filepath,
@@ -652,16 +585,10 @@ const _appendToJsonFile = function (
 							}
 							fs.close(fileDescriptor, function () {
 								fileManager.release(filepath);
-								logger.report(
-									fileHelper,
-									'_appendToJsonFile:: success: path:\n' + filepath,
-								);
-								_batchHandlePromise(
-									resolve,
-									'_appendToJsonFile:: success: path:' + filepath,
-								);
+								logger.report(logObj, '_appendToJsonFile:: success: path:\n' + filepath);
+								_batchHandlePromise(resolve, '_appendToJsonFile:: success: path:' + filepath);
 							});
-						},
+						}
 					);
 					stream.close();
 					return;
@@ -693,29 +620,19 @@ function _isSizeExceeded(filepath: string, options: WriteFileOptionsType): boole
 	return false;
 }
 
-function _createNextFilename(
-	options: WriteFileOptionsType,
-	words: string,
-	count: number,
-	ext: string,
-): string {
-	return words + count.toString().padStart(options.nextFilePaddedZeroes, '0') + '.' + ext;
+function _createNextFilename(options: WriteFileOptionsType, words: string, count: number, ext: string): string {
+	return words + getPaddedZeroes(count, options.nextFilePaddedZeroes) + '.' + ext;
 }
 
 function _getNextFileName(
 	file: string,
 	fileMap: any,
 	dir: string,
-	options: WriteFileOptionsType,
+	options: WriteFileOptionsType
 ): { nextFileName: string; prevFileName: string } {
-	const [base, ext] = utils.splitInReverseByCondition(file, (i: string) => i === '.');
-	// console.log(base, ext);
-	const [words, numbers] = utils.splitInReverseByCondition(
-		base,
-		(i: string) => isNaN(Number(i)),
-		true,
-	);
-	let count: number = utils.tryParseNumber(numbers, 0);
+	const [base, ext] = splitInReverseByCondition(file, (i: string) => i === '.');
+	const [words, numbers] = splitInReverseByCondition(base, (i: string) => isNaN(Number(i)), true);
+	let count: number = tryParseFloat(numbers, 0);
 	let nextFileName = _createNextFilename(options, words, count, ext);
 	let prevFileName = nextFileName;
 	const predicate = (nextFileName: string): boolean => {
@@ -733,18 +650,20 @@ function _getNextFileName(
 }
 
 function _autoParseNextFileName(filepath: string, options: WriteFileOptionsType): string[] {
+	const logObj: LoggableType = { logSignature, funcSignature: '_autoParseNextFileName', shouldNotLogToTextFile: false };
 	const [dir, file] = options.relativePath
 		? fileHelper.splitFolderAndFile(fileHelper.getResolvedPath(filepath))
 		: fileHelper.splitFolderAndFile(filepath);
-	logger.report(fileHelper, '_autoParseNextFileName:: dir, file: ', dir, file);
+	logger.report(logObj, '_autoParseNextFileName:: dir, file: ', dir, file);
 	const files = fs.readdirSync(dir);
 	const fileMap = {};
 	files.map((i) => (fileMap[i] = true));
 	const { nextFileName } = _getNextFileName(file, fileMap, dir, options);
-	logger.report(fileHelper, '_autoParseNextFileName::', dir + nextFileName);
+	logger.report(logObj, '_autoParseNextFileName::', dir + nextFileName);
 	return [dir, nextFileName];
 }
 
 export const _testPath = function (path: string): void {
-	logger.report(fileHelper, '_testPath: ' + fileHelper.getResolvedPath(path));
+	const logObj: LoggableType = { logSignature, funcSignature: '_testPath', shouldNotLogToTextFile: false };
+	logger.report(logObj, '_testPath: ' + fileHelper.getResolvedPath(path));
 };

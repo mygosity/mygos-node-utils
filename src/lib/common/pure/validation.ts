@@ -26,9 +26,12 @@ export function isNumber(input: string): boolean {
 	return !isNaN(Number(input));
 }
 
+export function isObjectOrArray(target: any): boolean {
+	return typeof target === 'object' && target != null;
+}
+
 export function isObject(target: any): boolean {
-	const type = typeof target;
-	return type === 'object' && !Array.isArray(target) && target != null;
+	return typeof target === 'object' && !Array.isArray(target) && target != null;
 }
 
 export function isObjectEmpty(target: any): boolean {

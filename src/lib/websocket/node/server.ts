@@ -1,10 +1,12 @@
+import http, { ServerResponse } from 'http';
+import https, { ServerOptions } from 'https';
+import WebSocket, { Server as WebSocketServer } from 'ws';
+
 import logger from '../../logger';
 import fileHelper from '../../file';
 import * as dateUtils from '../../date';
-import utils from '../../common';
-import WebSocket, { Server as WebSocketServer } from 'ws';
-import http, { ServerResponse } from 'http';
-import https, { ServerOptions } from 'https';
+import { prefillDefaultOptions } from '../../common/pure/misc';
+import { safeJsonStringify, splitInReverseByCondition } from '../../common/inputhandlers';
 
 export const logSignature = 'WebSocketServer=>';
 
@@ -34,12 +36,7 @@ export interface WebsocketServerOptionsType {
 	originPredicate?: (origin: string, request: http.IncomingMessage) => boolean;
 	onAuthRejectHandler?: (request: http.IncomingMessage) => void;
 	onconnectAccepted?: (connection: WebSocket, request: http.IncomingMessage) => void;
-	onclose?: (
-		connection: WebSocket,
-		request: http.IncomingMessage,
-		reasonCode: number,
-		description: string,
-	) => void;
+	onclose?: (connection: WebSocket, request: http.IncomingMessage, reasonCode: number, description: string) => void;
 	onerror?: (connection: WebSocket, error: Error) => void;
 	onping?: () => void;
 	onpong?: () => void;
@@ -58,7 +55,7 @@ function WebsocketServerOptions() {
 	this.acceptProtocol = null;
 	this.originPredicate = (origin: string, request: http.IncomingMessage) => {
 		// put logic here to detect whether the specified origin is allowed.
-		logger.report({ logSignature }, { src: 'originIsAllowed', origin });
+		logger.report({ logSignature, funcSignature: 'WebsocketServerOptions()' }, { src: 'originIsAllowed', origin });
 		return true;
 	};
 	//   this.acceptProtocol = 'echo-protocol';
@@ -74,12 +71,8 @@ function WebsocketServerOptions() {
 export const defaultWebsocketServerOptions = new WebsocketServerOptions();
 
 const reqListener = (request: http.IncomingMessage, response: ServerResponse): void => {
-	logger.report(
-		{ logSignature },
-		dateUtils.wrapWithAusTimeStamp({
-			src: `http.createServer::`,
-		}),
-	);
+	const logObj = { logSignature, funcSignature: 'reqListener' };
+	logger.report(logObj, `http.createServer::`);
 	response.writeHead(404);
 	response.end();
 };
@@ -97,12 +90,7 @@ export default class WebSocketServerWrapper {
 	acceptProtocol: string;
 	originPredicate: (origin: string, request: http.IncomingMessage) => boolean;
 	onconnectAccepted: (connection: WebSocket, request: http.IncomingMessage) => void;
-	onclose: (
-		connection: WebSocket,
-		request: http.IncomingMessage,
-		reasonCode: number,
-		description: string,
-	) => void;
+	onclose: (connection: WebSocket, request: http.IncomingMessage, reasonCode: number, description: string) => void;
 	onerror: (connection: WebSocket, error: Error) => void;
 	onping?: () => void;
 	onpong?: () => void;
@@ -123,7 +111,7 @@ export default class WebSocketServerWrapper {
 		this.logSignature = logSignature;
 		this.port = port;
 
-		options = utils.prefillDefaultOptions(options, defaultWebsocketServerOptions);
+		options = prefillDefaultOptions(options, defaultWebsocketServerOptions);
 		this.originPredicate = options.originPredicate;
 		this.acceptProtocol = options.acceptProtocol;
 		this.onconnectAccepted = options.onconnectAccepted;
@@ -147,17 +135,15 @@ export default class WebSocketServerWrapper {
 	}
 
 	loadSinBin = () => {
-		const [dir] = utils.splitInReverseByCondition(
-			this.sinbinFilepath,
-			(i: string) => i === '/' || i === '\\',
-		);
+		const [dir] = splitInReverseByCondition(this.sinbinFilepath, (i: string) => i === '/' || i === '\\');
 		fileHelper.assertDirExists(dir);
 		try {
 			if (fileHelper.fileExists(this.sinbinFilepath)) {
 				sinbin = fileHelper.readFileSync(this.sinbinFilepath);
 			}
 		} catch (error) {
-			logger.error(this, error);
+			const logObj = { logSignature: this.logSignature, funcSignature: 'loadSinBin' };
+			logger.error(logObj, error);
 		}
 	};
 
@@ -172,7 +158,7 @@ export default class WebSocketServerWrapper {
 			} else {
 				delete sinbin[request.connection.remoteAddress];
 			}
-			await fileHelper.writeToFile(this.sinbinFilepath, utils.safeJsonStringify(sinbin), {
+			await fileHelper.writeToFile(this.sinbinFilepath, safeJsonStringify(sinbin), {
 				overwrite: true,
 				append: false,
 			});
@@ -189,15 +175,10 @@ export default class WebSocketServerWrapper {
 
 	init = (httpsOptions: ServerOptions = {}, websocketOptions: any = {}): void => {
 		this.server = http.createServer(httpsOptions, reqListener);
-		this.server.listen(this.port, (): void => {
-			logger.report(
-				this,
-				dateUtils.wrapWithAusTimeStamp({
-					src: `server.listen::`,
-					msg: `Server is listening on port ${this.port}`,
-				}),
-			);
-		});
+		// const logObj = { logSignature: this.logSignature, funcSignature: 'init' };
+		// this.server.listen(this.port, (): void => {
+		// 	logger.report(logObj, `server.listen:: port ${this.port}`);
+		// });
 		this.startListening(websocketOptions);
 	};
 
@@ -235,117 +216,77 @@ export default class WebSocketServerWrapper {
 			});
 		}
 		const self = this;
-		this.wsServer.on(
-			'connection',
-			function (connection: WebSocket, request: http.IncomingMessage) {
-				const { remoteAddress } = request.socket;
-				self.onconnectAccepted(connection, request);
-				if (connections[remoteAddress] === undefined) {
-					connections[remoteAddress] = dateUtils.wrapWithAusTimeStamp({
-						connection,
-					});
+		const logObj = { logSignature: self.logSignature, funcSignature: 'startListening' };
+		this.wsServer.on('connection', function (connection: WebSocket, request: http.IncomingMessage) {
+			const { remoteAddress } = request.socket;
+			self.onconnectAccepted(connection, request);
+			if (connections[remoteAddress] === undefined) {
+				connections[remoteAddress] = dateUtils.wrapWithAusTimeStamp({
+					connection,
+				});
+			}
+			logger.report(logObj, `wsServer.on('request') | Connection accepted | connection.remoteAddress: ${remoteAddress}`);
+			connection.on('message', (data: WebSocket.Data): void => {
+				if (typeof data === 'string') {
+					self.msgHandlers.utf8(connection, data);
 				}
+			});
+			connection.on('ping', (): void => {
+				if (self.onping) {
+					self.onping();
+				} else {
+					connection.pong();
+				}
+			});
+			connection.on('pong', (): void => {
+				// keep the connection alive by resetting the timer
+				if (self.onpong) {
+					self.onpong();
+				}
+			});
+			connection.on('close', (reasonCode: number, description: string): void => {
 				logger.report(
-					self,
-					dateUtils.wrapWithAusTimeStamp({
-						src: `wsServer.on('connection')`,
-						msg: 'Connection accepted | connection.remoteAddress: ' + remoteAddress,
-					}),
+					logObj,
+					`connection.on('close') | Peer ' ${remoteAddress} disconnected, reasonCode: ${
+						reasonCode?.toString?.() ?? ''
+					}, description: ${description?.toString?.() ?? ''}`
 				);
-				connection.on('message', (data: WebSocket.Data): void => {
-					if (typeof data === 'string') {
-						self.msgHandlers.utf8(connection, data);
-					}
-				});
-				connection.on('ping', (): void => {
-					if (self.onping) {
-						self.onping();
-					} else {
-						connection.pong();
-					}
-				});
-				connection.on('pong', (): void => {
-					// keep the connection alive by resetting the timer
-					if (self.onpong) {
-						self.onpong();
-					}
-				});
-				connection.on('close', (reasonCode: number, description: string): void => {
-					logger.report(
-						self,
-						dateUtils.wrapWithAusTimeStamp({
-							src: `connection.on('close')`,
-							msg: 'Peer ' + remoteAddress + ' disconnected',
-							reasonCode,
-							description,
-						}),
-					);
-					if (self.onclose !== undefined) {
-						self.onclose(connection, request, reasonCode, description);
-					}
-					delete connections[remoteAddress];
-				});
-				connection.on('error', (error: Error): void => {
-					if (self.onerror !== undefined) {
-						self.onerror(connection, error);
-					}
-					logger.report(
-						self,
-						dateUtils.wrapWithAusTimeStamp({
-							src: `connection.on('error')`,
-							msg: 'Peer ' + remoteAddress,
-							error,
-						}),
-					);
-				});
-			},
-		);
+				if (self.onclose !== undefined) {
+					self.onclose(connection, request, reasonCode, description);
+				}
+				delete connections[remoteAddress];
+			});
+			connection.on('error', (error: Error): void => {
+				if (self.onerror !== undefined) {
+					self.onerror(connection, error);
+				}
+				logger.report(logObj, `connection.on('error') | Peer ' ${remoteAddress} disconnected, error: ${error?.toString?.() ?? ''}`);
+			});
+		});
 		this.server.listen(this.port, () => {
-			logger.report(
-				this,
-				dateUtils.wrapWithAusTimeStamp({
-					src: `server.listen::`,
-					msg: `Server is listening on port ${this.port}`,
-				}),
-			);
+			logger.report(logObj, `server.listen:: port ${this.port}`);
 		});
 	};
 
 	verifyClient = (
 		info: { origin: string; secure: boolean; req: http.IncomingMessage },
-		callback: (
-			res: boolean,
-			code?: number,
-			message?: string,
-			headers?: http.OutgoingHttpHeaders,
-		) => void,
+		callback: (res: boolean, code?: number, message?: string, headers?: http.OutgoingHttpHeaders) => void
 	) => {
 		const { origin, secure, req } = info;
 		const { remoteAddress } = req.connection;
-		logger.report(
-			{ logSignature },
-			{
-				msg: 'verifyClient',
-				url: req.url,
-				ip: remoteAddress,
-				secure,
-				origin,
-			},
-		);
+		const logObj = { logSignature: this.logSignature, funcSignature: 'verifyClient' };
+		logger.report(logObj, `url: ${req.url}, ip: ${remoteAddress}, secure: ${secure ? 1 : 0}, origin: ${origin?.toString?.() ?? ''}`);
 		let sinbinned = false;
 		if (sinbin[remoteAddress] !== undefined) {
 			if (Date.now() < sinbin[remoteAddress].unbanFrom) {
 				this.updateSinBin(req, false);
 			} else {
-				logger.report(this, {
-					msg: 'originPredicate:: ip was in the sin bin, need to wait!',
-					sinbin,
-				});
+				logger.report(logObj, `originPredicate:: ip was in the sin bin, need to wait! sinbin: ${safeJsonStringify(sinbin)}`);
 				sinbinned = true;
 			}
 		}
 		if (sinbinned || !this.originPredicate(origin as string, req)) {
-			logger.report(this, 'request rejected: ' + remoteAddress);
+			logger.report(logObj, 'request rejected: ' + remoteAddress);
 			if (!sinbinned && this.autoSinBin) {
 				this.updateSinBin(req, true);
 			}
@@ -353,13 +294,7 @@ export default class WebSocketServerWrapper {
 			this.onAuthRejectHandler(req);
 			callback(false, 400, 'invalid key | sinbinned');
 			// abortHandshake(socket, 400, 'invalid key | sinbinned', request.headers);
-			logger.report(
-				this,
-				dateUtils.wrapWithAusTimeStamp({
-					src: `wsServer.on('request') | !originIsAllowed | `,
-					msg: ' Connection from origin ' + origin + ' rejected.',
-				}),
-			);
+			logger.report(logObj, `wsServer.on('request') | !originIsAllowed | Connection from origin ' ${origin} rejected.`);
 			return;
 		}
 		callback(true);

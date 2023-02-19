@@ -1,7 +1,7 @@
-import logger from '../logger';
+import logger, { LoggableType } from '../logger';
 
-let filelocks: { [key: string]: any } = {};
-let writequeue: { [key: string]: any } = {};
+let filelocks: Record<string, any> = {};
+let writequeue: Record<string, any> = {};
 
 export class FileManager {
 	logSignature: string;
@@ -26,9 +26,10 @@ export class FileManager {
 		args: any[],
 		writeCallback: (filepath: string, copiedData: any, ...copiedArgs: any[]) => void,
 		writeImmediately: boolean = true,
-		argResolver: (currentArgs: any[], newlyAddedArgs: any[]) => void = undefined,
+		argResolver: (currentArgs: any[], newlyAddedArgs: any[]) => void = undefined
 	) => {
-		logger.report(this, 'queue::', filepath);
+		const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'queue', shouldNotLogToTextFile: false };
+		logger.report(logObj, 'queue::', filepath);
 		if (writequeue[filepath] == null) {
 			writequeue[filepath] = [];
 		}
@@ -53,6 +54,7 @@ export class FileManager {
 			allNull: boolean = true;
 
 		const target = writequeue[filepath];
+		const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'releaseQueue', shouldNotLogToTextFile: false };
 
 		for (let i = 0; i < target.length; ++i) {
 			if (target[i] != null) {
@@ -64,10 +66,7 @@ export class FileManager {
 				if (writeCallback === undefined) {
 					writeCallback = target[i].writeCallback;
 				} else if (writeCallback !== target[i].writeCallback) {
-					logger.report(
-						this,
-						'releaseQueue:: detected a different writeCallback:: this should not be batched',
-					);
+					logger.report(logObj, 'releaseQueue:: detected a different writeCallback:: this should not be batched');
 				}
 				if (copiedArgs === undefined) {
 					copiedArgs = target[i].args;
@@ -84,7 +83,7 @@ export class FileManager {
 		}
 		if (allNull) writequeue[filepath] = [];
 		if (writeCallback) {
-			logger.report(this, 'releaseQueue::writeCallback: filepath\n', { filepath });
+			logger.report(logObj, 'releaseQueue::writeCallback: filepath\n', { filepath });
 			this.tryLock(filepath);
 			if (copiedArgs === undefined) copiedArgs = [];
 			writeCallback(filepath, copiedData, ...copiedArgs);
@@ -103,7 +102,8 @@ export class FileManager {
 	 */
 	tryLock = (filepath: string): boolean => {
 		if (filelocks[filepath] === true) {
-			logger.report(this, { reason: 'lock: file is already locked:' + filepath, filelocks });
+			const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'tryLock', shouldNotLogToTextFile: false };
+			logger.report(logObj, { reason: 'lock: file is already locked:' + filepath, filelocks });
 			return false;
 		}
 		filelocks[filepath] = true;
@@ -112,7 +112,8 @@ export class FileManager {
 
 	release = (filepath: string) => {
 		filelocks[filepath] = false;
-		logger.report(this, 'release:: released file lock path :', filepath);
+		const logObj: LoggableType = { logSignature: this.logSignature, funcSignature: 'release', shouldNotLogToTextFile: false };
+		logger.report(logObj, 'release:: released file lock path :', filepath);
 		if (writequeue[filepath] !== undefined && writequeue[filepath].length) {
 			this.releaseQueue(filepath);
 		}
@@ -135,7 +136,7 @@ export class FileManager {
 
 	__status = () => {
 		this.__logStatus();
-		logger.writelog(this, { src: this, filelocks, writequeue });
+		logger.writelog({ logSignature: this.logSignature, funcSignature: '__status' }, { src: this, filelocks, writequeue });
 	};
 }
 const fileManager = new FileManager();

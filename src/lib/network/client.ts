@@ -1,7 +1,7 @@
 import http from 'http';
 import https from 'https';
-import { getParametizedUrl } from '../common';
 import { safeJsonParse } from '../common/inputhandlers';
+import { getParametizedUrl } from '../common/pure/misc';
 
 export class WebClient {
 	shouldLogResponse: boolean = false;
@@ -15,7 +15,7 @@ export class WebClient {
 		customOptions: { parseJsonResponse: boolean; postData?: string; maxRedirects?: number } = {
 			parseJsonResponse: true,
 		},
-		depth: number = 0,
+		depth: number = 0
 	) {
 		const request = (url.protocol[4] === 's' ? https : http)
 			.request(url, requestOptions, (response: http.IncomingMessage) => {
@@ -54,14 +54,7 @@ export class WebClient {
 						if (customOptions.parseJsonResponse) {
 							headers['Content-Type'] = 'application/json';
 						}
-						this.handleResponseCallback(
-							resolve,
-							reject,
-							optionsWithUrlParsed,
-							requestOptions,
-							customOptions,
-							depth + 1,
-						);
+						this.handleResponseCallback(resolve, reject, optionsWithUrlParsed, requestOptions, customOptions, depth + 1);
 						return;
 					}
 					const payload = customOptions.parseJsonResponse ? safeJsonParse(data) : data;
@@ -109,11 +102,9 @@ export class WebClient {
 		requestOptions: https.RequestOptions,
 		customOptions: { parseJsonResponse: boolean; postData?: string; maxRedirects?: number } = {
 			parseJsonResponse: true,
-		},
+		}
 	): Promise<any> {
-		return new Promise((resolve, reject) =>
-			this.handleResponseCallback(resolve, reject, url, requestOptions, customOptions),
-		);
+		return new Promise((resolve, reject) => this.handleResponseCallback(resolve, reject, url, requestOptions, customOptions));
 	}
 
 	async get(
@@ -125,19 +116,13 @@ export class WebClient {
 			paramsObj?: { [key: string]: any };
 		} = {
 			parseJsonResponse: true,
-		},
+		}
 	): Promise<any> {
-		const optionsWithUrlParsed = new URL(
-			customOptions.paramsObj ? getParametizedUrl(url, customOptions.paramsObj) : url,
-		);
+		const optionsWithUrlParsed = new URL(customOptions.paramsObj ? getParametizedUrl(url, customOptions.paramsObj) : url);
 		if (customOptions.parseJsonResponse) {
 			headers['Content-Type'] = 'application/json';
 		}
-		return await this.handleRequest(
-			optionsWithUrlParsed,
-			{ method: 'GET', headers },
-			customOptions,
-		);
+		return await this.handleRequest(optionsWithUrlParsed, { method: 'GET', headers }, customOptions);
 	}
 
 	async post(
@@ -150,11 +135,9 @@ export class WebClient {
 			paramsObj?: { [key: string]: any };
 		} = {
 			parseJsonResponse: true,
-		},
+		}
 	): Promise<any> {
-		const optionsWithUrlParsed = new URL(
-			customOptions.paramsObj ? getParametizedUrl(url, customOptions.paramsObj) : url,
-		);
+		const optionsWithUrlParsed = new URL(customOptions.paramsObj ? getParametizedUrl(url, customOptions.paramsObj) : url);
 		if (customOptions.parseJsonResponse) {
 			headers['Content-Type'] = 'application/json';
 		}
@@ -162,7 +145,7 @@ export class WebClient {
 		return await this.handleRequest(
 			optionsWithUrlParsed,
 			{ method: 'POST', headers },
-			{ parseJsonResponse: customOptions.parseJsonResponse, postData: data },
+			{ parseJsonResponse: customOptions.parseJsonResponse, postData: data }
 		);
 	}
 }

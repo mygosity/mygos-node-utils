@@ -1,4 +1,4 @@
-import { eventcontrol } from 'eventcontrol';
+import { eventcontrol } from '../commands';
 import WebsocketClient from './client';
 
 const localhostname = 'localhost';
@@ -25,7 +25,7 @@ class WebsocketService {
 			},
 			{
 				autoKeepAliveCallback: this.heartBeat,
-			},
+			}
 		);
 		this.client.loadWebsocketConnections();
 	};
@@ -42,7 +42,7 @@ class WebsocketService {
 			JSON.stringify({
 				event: 'origin',
 				identity: 'woohoo',
-			}),
+			})
 		);
 	};
 

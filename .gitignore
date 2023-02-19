@@ -63,6 +63,18 @@ typings/
 .DS_Store
 
 .vscode/
-logging/
-errorlogs/
+_archive/
+_logging/
+_errorlogs/
+_configs/
 
+evalCode/
+
+
+#runtime code that is fetched and served to uap
+__ignoreRunTimeCode*.js
+
+#decrypted code for runtime evaluation is ignored and should only be used for comparison
+__ignore_decrypted*.js
+
+__fetchConfig.json

@@ -1,27 +1,19 @@
-import utils from '../common';
-import fileHelper from './index';
 import fs, { Stats } from 'fs';
 import prettier, { BuiltInParserName } from 'prettier';
+import fileHelper from './index';
+import utils from '../common';
 
-export function getAllFilesFromDirectory(
-	baseDir: string,
-	ext: string,
-	options: { excludeDirectories?: string[] } = {},
-): any[] {
+export function getAllFilesFromDirectory(baseDir: string, ext: string, options: { excludeDirectories?: string[] } = {}): any[] {
 	//index all json files for prettying up
 	const files = fs.readdirSync(baseDir);
 	const fileCollection = [];
 	const directories = [];
-	const _latestFileSearcher = (
-		baseDir: string,
-		directories: Array<{ path: string; stats: Stats }>,
-		fileCollection,
-	) => {
+	const _latestFileSearcher = (baseDir: string, directories: Array<{ path: string; stats: Stats }>, fileCollection) => {
 		return (currentFileName) => {
 			if (options.excludeDirectories) {
 				const [first, lastDirectory] = utils.splitInReverseByCondition(
 					baseDir.substring(0, baseDir.length - 1),
-					(i: string) => i === '/',
+					(i: string) => i === '/'
 				);
 				if (options.excludeDirectories.includes(lastDirectory)) {
 					return;
@@ -59,10 +51,7 @@ export function getAllFilesFromDirectory(
 	return fileCollection;
 }
 
-export function prettyFormat(
-	files: Array<{ path: string; stats: Stats }>,
-	parser: BuiltInParserName = 'json',
-) {
+export function prettyFormat(files: Array<{ path: string; stats: Stats }>, parser: BuiltInParserName = 'json') {
 	for (let i = 0; i < files.length; ++i) {
 		const { path } = files[i];
 		let readData: string, data: string;

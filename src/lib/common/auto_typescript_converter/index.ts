@@ -1,5 +1,5 @@
-import { prefillDefaultOptions } from '..';
-import { isEmpty, isObject } from '../validation';
+import { prefillDefaultOptions } from '../pure/misc';
+import { isEmpty, isObject } from '../pure/validation';
 
 const TAB = '\t',
 	ENDLINE = '\n',
@@ -40,9 +40,7 @@ function shouldSurroundWithQuotes(type: string): boolean {
 }
 
 function printObjectKey(type: string, optionalTypeDecorator: string) {
-	return shouldSurroundWithQuotes(type)
-		? `'${type}${optionalTypeDecorator}': `
-		: `${type}${optionalTypeDecorator}: `;
+	return shouldSurroundWithQuotes(type) ? `'${type}${optionalTypeDecorator}': ` : `${type}${optionalTypeDecorator}: `;
 }
 
 function printArrBracketsForEachDepth(depth: number): string {
@@ -63,12 +61,10 @@ function parsedArrayType(
 	optionalData: any,
 	depth: number = 1,
 	arrayDepth: number = 1,
-	singleProperty: boolean = false,
+	singleProperty: boolean = false
 ): string {
 	let answer = EMPTY_STRING,
-		ending = !singleProperty
-			? printArrBracketsForEachDepth(arrayDepth) + COMMA
-			: printArrBracketsForEachDepth(arrayDepth);
+		ending = !singleProperty ? printArrBracketsForEachDepth(arrayDepth) + COMMA : printArrBracketsForEachDepth(arrayDepth);
 
 	let model = {},
 		nullableProps = {};
@@ -122,13 +118,7 @@ function parsedArrayType(
 	return answer;
 }
 
-function parsedObjectType(
-	type: string,
-	fromParsedArrayType: boolean,
-	data: any,
-	optionalData: ParseOptions,
-	depth: number,
-) {
+function parsedObjectType(type: string, fromParsedArrayType: boolean, data: any, optionalData: ParseOptions, depth: number) {
 	let answer = '';
 	let ending = '';
 	if (optionalData.queuedInterfaces !== null && type !== null) {
@@ -170,13 +160,7 @@ function parsedDataType(type: string, data: any, optionalData: any, depth: numbe
 		} else if (Array.isArray(data)) {
 			answer += parsedArrayType(type, data, optionalData, depth + 1);
 		} else if (isObject(data)) {
-			const [first, last] = parsedObjectType(
-				type,
-				fromParsedArrayType,
-				data,
-				optionalData,
-				depth,
-			);
+			const [first, last] = parsedObjectType(type, fromParsedArrayType, data, optionalData, depth);
 			answer += first;
 			ending += last;
 		}
@@ -228,7 +212,7 @@ export function convertToTypeDefinition(
 	interfaceName: string,
 	data: any,
 	options: ConvertToTypeOptions = {},
-	recursionDepth: number = 1,
+	recursionDepth: number = 1
 ): string {
 	options = prefillDefaultOptions(options, defaultConvertToTypeOptions);
 
@@ -247,9 +231,7 @@ export function convertToTypeDefinition(
 	}
 
 	const shouldCreateInterface =
-		(options.maxAutoInnerInterfaceDepth === -1 ||
-			options.maxAutoInnerInterfaceDepth >= recursionDepth) &&
-		options.autoInnerInterface;
+		(options.maxAutoInnerInterfaceDepth === -1 || options.maxAutoInnerInterfaceDepth >= recursionDepth) && options.autoInnerInterface;
 
 	const queuedInterfaces: { [key: string]: any } = shouldCreateInterface ? {} : null;
 	const parseOptions: ParseOptions = {
@@ -271,15 +253,9 @@ export function convertToTypeDefinition(
 			}
 		}
 	}
-	answer = !fromArray
-		? answer + RIGHT_BRACE + SEMICOLON + ENDLINE + ENDLINE
-		: answer + SEMICOLON + ENDLINE + ENDLINE;
+	answer = !fromArray ? answer + RIGHT_BRACE + SEMICOLON + ENDLINE + ENDLINE : answer + SEMICOLON + ENDLINE + ENDLINE;
 	if (parseOptions.queuedInterfaces !== null) {
-		answer += recursivelyHandleQueuedInterfaces(
-			parseOptions.queuedInterfaces,
-			options,
-			recursionDepth + 1,
-		);
+		answer += recursivelyHandleQueuedInterfaces(parseOptions.queuedInterfaces, options, recursionDepth + 1);
 	}
 	return answer;
 }
@@ -287,7 +263,7 @@ export function convertToTypeDefinition(
 function recursivelyHandleQueuedInterfaces(
 	queuedInterfaces: { [key: string]: any },
 	options: ConvertToTypeOptions,
-	recursionDepth: number,
+	recursionDepth: number
 ): string {
 	let answer = '';
 	for (let type in queuedInterfaces) {

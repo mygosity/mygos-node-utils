@@ -1,5 +1,5 @@
-import WebSocketServer from '../node/server';
 import WebSocket from 'ws';
+import WebSocketServer from '../node/server';
 
 let ws: WebSocketServer,
 	connections: { [identity: string]: WebSocket } = {};

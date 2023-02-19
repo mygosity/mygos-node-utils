@@ -15,11 +15,7 @@ export function getFormattedNumber(value: number, maxOptionalDecimals: number = 
  * @param {number} numDecimals the number of decimals expected
  * @return {string} value after formatting with appropriate values
  */
-export function getFormattedPrice(
-	amount: number,
-	numDecimals: number = 2,
-	shouldLog: boolean = false,
-): string | number {
+export function getFormattedPrice(amount: number, numDecimals: number = 2, shouldLog: boolean = false): string | number {
 	if (!amount.toFixed || isNaN(amount) || numDecimals < 0) {
 		shouldLog && console.log('priceFormatter:: amount is invalid.');
 		return amount;
@@ -31,8 +27,7 @@ export function getFormattedPrice(
 	const decimalModifier = numDecimals > 0 ? numDecimals + 1 : 0;
 	let currentlength = amountString.length - 3 - decimalModifier;
 	while (currentlength > 0) {
-		amountString =
-			amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
+		amountString = amountString.slice(0, currentlength) + commaSymbol + amountString.slice(currentlength);
 		currentlength -= 3;
 	}
 	return '$' + amountString;
@@ -57,4 +52,13 @@ export function getHumanReadableTime(input: number): string {
 	}
 	plural = input / 1000 / 60 / 60 / 24 > 1 ? 's' : '';
 	return (input / 1000 / 60 / 60 / 24).toFixed(1) + ' day' + plural;
+}
+
+export function getPaddedZeroes(input: number | string, maxPadLength: number = 0) {
+	let answer = input.toString(),
+		capturedLength = answer.length;
+	for (let i = 0; i < maxPadLength - capturedLength; ++i) {
+		answer = 0 + answer;
+	}
+	return answer;
 }
