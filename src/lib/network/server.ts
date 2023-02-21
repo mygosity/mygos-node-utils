@@ -1,4 +1,4 @@
-import { Express, Request, Response, NextFunction } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 
 import logger from '../logger';
@@ -7,7 +7,6 @@ import { getTranspiledData } from '../common';
 import { getAusTimestamp } from '../date';
 
 import { safeJsonParse, splitInReverseByCondition } from '../common/inputhandlers';
-import ServerWrapper from './wrapper';
 import { paths } from '../../settings';
 
 const logSignature = 'LocalServer=>';
@@ -27,8 +26,8 @@ const mime = {
 
 class LocalServer {
 	logSignature: string;
-	server: ServerWrapper;
 	sockets = [];
+	expressService = express();
 
 	asyncStorage: Map<string, string> = new Map();
 	//map of user agent ids to a setting config to enable agent id targeting for live reloads etc
@@ -36,20 +35,21 @@ class LocalServer {
 
 	constructor() {
 		this.logSignature = logSignature;
-		this.server = new ServerWrapper({
-			get: {
-				'/image': this.imageserving,
-				'/files': this.fileserving,
-				'/directCode': this.handleDirectPayloadFetch,
-				'/eval': this.handleFetchCodePayload,
-				'/evalCodeConfig': this.handleFetchCodeConfig,
-			},
-			post: {
-				'/log': this.postLog,
-				'/error': this.postError,
-			},
+
+		//error handler base
+		this.expressService.use((error: any, req: Request, res: Response, next: NextFunction): any => {
+			console.error(error);
+			res.status(500).send('basicErrorHandler:: Something broke!');
 		});
-		this.server.init();
+
+		this.expressService.get('/image/*', this.imageserving);
+		this.expressService.get('/files/*', this.fileserving);
+		this.expressService.get('/directCode/*', this.handleDirectPayloadFetch);
+		this.expressService.get('/eval/*', this.handleFetchCodePayload);
+		this.expressService.get('/evalCodeConfig', this.handleFetchCodeConfig);
+
+		this.expressService.post('/log', this.postLog);
+		this.expressService.post('/error', this.postError);
 	}
 
 	startServing = (port: number = 57333) => {
@@ -72,7 +72,7 @@ class LocalServer {
 	};
 
 	get service(): Express {
-		return this.server.app;
+		return this.expressService;
 	}
 
 	getAsyncStorageMap = () => {
