@@ -1,7 +1,7 @@
 import { paths } from './settings';
 
-import { FileHelper, SafeReadFilePromiseType } from './lib/file';
-import { FileManager } from './lib/file/manager';
+import { fileHelper, SafeReadFilePromiseType } from './lib/file';
+import { fileManager } from './lib/file/manager';
 import { EventManager } from './lib/eventmanager';
 import { webClient } from './lib/network/client';
 import * as utils from './lib/common';
@@ -16,8 +16,6 @@ import localServer from './lib/network/server';
 export enum Events {
 	WebsocketConnected,
 }
-const fileHelper: FileHelper = require('./lib/file').default;
-const fileManager: FileManager = require('./lib/file/manager').default;
 
 const rl = require('readline');
 const readline = rl.createInterface({
@@ -30,11 +28,12 @@ export const eventcontrol = new EventManager();
 //@ts-ignore
 export const env: EnvInterface = {};
 export const reloadConfig = async () => {
+	const LOCAL_ENV_PATH = paths.root + '/env/localenv.json';
 	const logObj = {
 		logSignature: 'commands.ts=>',
 		funcSignature: 'reloadConfig',
 	};
-	const envPromise: SafeReadFilePromiseType = await fileHelper.safeReadFileSync(paths.root + '/env/.env.json', {
+	const envPromise: SafeReadFilePromiseType = await fileHelper.safeReadFileSync(LOCAL_ENV_PATH, {
 		jsonParse: true,
 		relativePath: false,
 	});
@@ -56,73 +55,43 @@ function initializePostConfigLoad() {
 }
 
 /***************************************************************
- * Command Class to hold all refs required or redirect requests
+ * Handle inputs from the command line prompt
  ***************************************************************/
-let _evalFunction = null,
-	_evalContext = null;
+export function startReadingPrompt() {
+	async function hotReloadFile(filepath: string): Promise<SafeReadFilePromiseType> {
+		return await fileHelper.safeReadFileSync(filepath, { jsonParse: false });
+	}
+	const globalContext = {
+		axios,
+		eventcontrol,
+		fileHelper,
+		fileManager,
+		webClient,
+		paths,
+		hotReloadFile,
+		logger,
+		utils,
+		dateUtils,
+		getEnv: () => env,
+	};
 
-export function useSmartEvaluator(handler: (input: string) => Promise<void> = inputHandler) {
-	_evalFunction = evaluator;
-	_evalContext = commander;
-	readline.on('line', handler);
-}
-
-export async function hotReloadFile(filepath: string): Promise<SafeReadFilePromiseType> {
-	return await fileHelper.safeReadFileSync(filepath, { jsonParse: false });
-}
-
-const globalContext = {
-	axios,
-	eventcontrol,
-	fileHelper,
-	fileManager,
-	webClient,
-	paths,
-	hotReloadFile,
-	logger,
-	utils,
-	dateUtils,
-	getEnv: () => env,
-};
-
-let inputHandler = async (input: string) => {
-	try {
-		if (input === '') {
-			console.log('hot reloading default file');
-			const { data, success } = await hotReloadFile('evalCode/code.js');
-			if (success) {
-				await _evalFunction.call(_evalContext, data.toString());
+	readline.on('line', async (input: string) => {
+		try {
+			if (input === '') {
+				console.log('hot reloading default file');
+				const { data, success } = await hotReloadFile('evalCode/code.js');
+				if (success) {
+					eval(data.toString());
+				}
+				return;
 			}
-		} else {
-			await _evalFunction.call(_evalContext, input);
+			if (input.substring(0, 2) === 'gs') {
+				return;
+			}
+			eval(input);
+		} catch (e) {
+			console.log(e);
 		}
-	} catch (error) {
-		console.log(error);
-	}
-	readline.prompt();
-};
-
-async function evaluator(input: string) {
-	eval(input);
-}
-
-class Commander {
-	constructor() {}
-}
-export const commander = new Commander();
-export default commander;
-
-/*************************************************************
- * Command intercept
- *************************************************************/
-export async function commandInterceptor(input: string) {
-	try {
-		if (input.substring(0, 2) === 'gs') {
-		} //
-		else {
-			await inputHandler(input);
-		}
-	} catch (e) {
-		console.log(e);
-	}
+		readline.prompt();
+	});
 }

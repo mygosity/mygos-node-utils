@@ -61,7 +61,7 @@ export function deepCopy(input: Record<string, any>): Record<string, any> {
 		return nextObject;
 	}
 
-	const output = Array.isArray(input) ? [] : {};
+	const output: Array<any> | Record<string, any> = Array.isArray(input) ? [] : {};
 	const seen = new Map();
 	seen.set(input, output);
 

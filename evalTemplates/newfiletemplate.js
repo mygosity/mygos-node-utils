@@ -1,4 +1,5 @@
 const {
+	dbManager,
 	eventcontrol,
 	fileHelper,
 	webClient,
@@ -50,12 +51,13 @@ async function loadCodeFile(path) {
 	}
 }
 
+const LOG_TAG = 'code.js';
+
 async function main() {
 	try {
-		console.log('***************main()***************');
+		console.log(`***************${LOG_TAG}::main()***************`);
 		const basePath = 'evalCode/';
-
-		// await loadCodeFile(basePath + 'filename.js');
+		// await loadCodeFile(basePath + 'test.js');
 	} catch (e) {
 		console.log(e);
 	}

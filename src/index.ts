@@ -2,7 +2,7 @@ import fileHelper, { defaultWriteFileOptions } from './lib/file';
 import fileManager from './lib/file/manager';
 import { paths } from './settings';
 import logger from './lib/logger';
-import * as commands from './commands';
+import { startReadingPrompt } from './commands';
 
 logger.configure({
 	prettyFormat: true,
@@ -31,6 +31,6 @@ function Main() {
 	const logObj = { logSignature: 'ENTRY=>', funcSignature: 'Main' };
 	logger.report(logObj, `**************************************************************************************`);
 	logger.report(logObj, `starting application`);
-	commands.useSmartEvaluator(commands.commandInterceptor);
+	startReadingPrompt();
 }
 Main();

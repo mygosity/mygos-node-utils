@@ -139,5 +139,5 @@ export class FileManager {
 		logger.writelog({ logSignature: this.logSignature, funcSignature: '__status' }, { src: this, filelocks, writequeue });
 	};
 }
-const fileManager = new FileManager();
+export const fileManager = new FileManager();
 export default fileManager;
