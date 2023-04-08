@@ -79,3 +79,5 @@ __ignoreRunTimeCode*.js
 __ignore_decrypted*.js
 
 __fetchConfig.json
+
+env/
