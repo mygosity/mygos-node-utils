@@ -22,7 +22,7 @@ export interface WebsocketClientOptionsType {
 	socketargs?: any;
 }
 
-export class WebsocketManager {
+export class WebSocketClient {
 	logSignature: string;
 	connection?: WebSocket;
 	url: string;
@@ -123,7 +123,6 @@ export class WebsocketManager {
 
 	loadWebsocketConnections = () => {
 		if (this.connection != null && (WebSocket.OPEN || WebSocket.CONNECTING)) {
-			console.log('connection already open returning...');
 			this.resetIntervals();
 			return;
 		}
@@ -196,7 +195,6 @@ export class WebsocketManager {
 	};
 
 	handleKeepAlive() {
-		//@ts-ignore
 		if (this.connection != null && this.connection.readyState === WebSocket.OPEN) {
 			this.lastKeepAliveTime = Date.now();
 			this.autoKeepAliveCallback();
