@@ -1,7 +1,6 @@
 //@ts-nocheck
 //remove the no check comment in an actual react native project as this code will throw TS errors anywhere else
-
-interface BrowserListenerOptions {
+interface ListenerOptions {
 	onopen?: (connection?: WebSocket) => void;
 	onerror?: (connection?: WebSocket, event?: WebSocketErrorEvent) => void;
 	onclose?: (connection?: WebSocket, event?: WebSocketCloseEvent) => void;
@@ -17,7 +16,6 @@ export interface WebsocketClientOptionsType {
 	maxTimeSinceLastUpdate?: number;
 	autoKeepAliveMaxTime?: number;
 	keepAliveTimeInterval?: number;
-	resetKeepAliveTimeOnPong?: boolean;
 	autoKeepAliveCallback?: () => void;
 	socketargs?: any;
 }
@@ -34,7 +32,6 @@ export class WebSocketClient {
 	maxTimeSinceLastUpdate: number;
 	autoKeepAliveMaxTime: number;
 	keepAliveTimeInterval: number;
-	resetKeepAliveTimeOnPong: boolean;
 	autoKeepAliveCallback: () => void;
 	socketargs: any;
 
@@ -55,7 +52,7 @@ export class WebSocketClient {
 	constructor(
 		url: string,
 		onmessage: (connection?: WebSocket, message?: WebSocketMessageEvent) => void,
-		listeners: BrowserListenerOptions = {},
+		listeners: ListenerOptions = {},
 		options: WebsocketClientOptionsType = {}
 	) {
 		this.url = url;
@@ -90,11 +87,10 @@ export class WebSocketClient {
 		this.maxTimeSinceLastUpdate = options.maxTimeSinceLastUpdate ?? 10 * 1000;
 		this.autoKeepAliveMaxTime = options.autoKeepAliveMaxTime ?? 1 * 60 * 1000;
 		this.keepAliveTimeInterval = options.keepAliveTimeInterval ?? 1000;
-		this.resetKeepAliveTimeOnPong = options.resetKeepAliveTimeOnPong ?? false;
 		this.autoKeepAliveCallback =
 			options.autoKeepAliveCallback ??
 			(() => {
-				/**no op*/
+				this.connection?.send('pong');
 			});
 		this.socketargs = options.socketargs;
 
@@ -113,11 +109,9 @@ export class WebSocketClient {
 	};
 
 	onPong = () => {
+		this.prevEventTime = Date.now();
 		if (this.onpong !== undefined) {
 			this.onpong(this.connection);
-		}
-		if (this.resetKeepAliveTimeOnPong) {
-			this.prevEventTime = Date.now();
 		}
 	};
 
